@@ -1,0 +1,22 @@
+/* About Section Styles */
+.about-section { padding: 5rem 0; background: transparent; margin-top: 0; position: relative; }
+.about-content { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+.about-image { position: relative; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(236, 72, 153, 0.15); border: 3px solid var(--border-light); }
+.about-image img { width: 100%; height: 400px; object-fit: cover; transition: transform 0.3s ease; }
+.about-text { padding: 0 1rem; }
+.about-title { font-family: 'Playfair Display', serif; font-size: 2.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 1.5rem; line-height: 1.3; }
+.about-description { font-size: 1.1rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 2rem; text-align: justify; }
+.advantages-list { margin-top: 0; }
+.advantages-list li { font-size: 1rem; line-height: 1.6; color: var(--text-secondary); margin-bottom: 1rem; padding-left: 1.5rem; position: relative; display: flex; align-items: flex-start; gap: 0.8rem; }
+.advantage-item { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; padding: 0.8rem; background: rgba(255, 255, 255, 0.1); border-radius: 15px; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); transition: all 0.3s ease; }
+.advantage-item:hover { background: rgba(255, 255, 255, 0.2); transform: translateX(10px); }
+.advantage-icon { font-size: 1.5rem; color: #ffd700; flex-shrink: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(255, 215, 0, 0.2); border-radius: 50%; }
+.image-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(236, 72, 153, 0.8), rgba(190, 24, 93, 0.8)); display: flex; align-items: center; justify-content: center; opacity: 0; transition: all 0.5s ease; border-radius: 20px; }
+.about-image:hover .image-overlay { opacity: 1; }
+.overlay-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; z-index: 2; }
+.overlay-icon { font-size: 3rem; margin-bottom: 1rem; color: #ffd700; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); }
+
+/* Responsive Design for About */
+@media (max-width: 1024px) { .about-content { gap: 3rem; } .about-text h2 { font-size: 2.2rem; } }
+@media (max-width: 768px) { .about-section { padding: 4rem 0; } .about-content { grid-template-columns: 1fr; gap: 2rem; padding: 0 1rem; } .about-text { padding: 1.5rem; } .about-text h2 { font-size: 2rem; } .about-description { font-size: 1rem; text-align: left; } .advantage-item { padding: 0.6rem; } .advantage-icon { width: 35px; height: 35px; font-size: 1.3rem; } .overlay-icon { font-size: 2.5rem; } }
+@media (max-width: 480px) { .about-section { padding: 3rem 0; } .about-content { padding: 0 0.5rem; } .about-text { padding: 1rem; } .about-text h2 { font-size: 1.8rem; } .about-description { font-size: 0.9rem; } .advantage-item { padding: 0.5rem; gap: 0.8rem; } .advantage-icon { width: 30px; height: 30px; font-size: 1.1rem; } .overlay-icon { font-size: 2rem; } }

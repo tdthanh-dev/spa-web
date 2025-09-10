@@ -1,0 +1,451 @@
+/* filepath: admin-spa-management/src/pages/dashboards/TechnicianDashboard.css */
+
+.technician-dashboard {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.dashboard-header h1 {
+  color: #1f2937;
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.dashboard-header p {
+  color: #6b7280;
+  font-size: 16px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 24px;
+}
+
+.dashboard-section {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.dashboard-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-section h2 {
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #f3f4f6;
+  padding-bottom: 8px;
+}
+
+.section-content p {
+  color: var(--text-primary-dark);
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+.section-content ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.section-content li {
+  color: #6b7280;
+  padding: 6px 0;
+  padding-left: 20px;
+  position: relative;
+}
+
+.section-content li::before {
+  content: '•';
+  color: var(--text-primary-dark);
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.action-btn {
+  padding: 12px 16px;
+  background: linear-gradient(135deg, var(--primary-dark-pink), var(--primary-dark-pink-dark));
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background: linear-gradient(135deg, var(--primary-dark-pink-dark), var(--primary-dark-pink-dark));
+  transform: translateY(-1px);
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(135deg, var(--primary-dark-pink), var(--primary-dark-pink-dark));
+}
+
+.stat-number {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary-dark);
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.treatment-card {
+  background: #f0fdf4;
+  border: 2px solid var(--primary-dark-pink);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.treatment-card.active {
+  background: #ecfdf5;
+  border-color: var(--text-primary-dark);
+  animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+  0%, 100% { border-color: var(--text-primary-dark); }
+  50% { border-color: var(--text-primary-dark); }
+}
+
+.treatment-info {
+  margin-bottom: 12px;
+}
+
+.treatment-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn.complete {
+  background: var(--primary-dark-pink);
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.action-btn.start {
+  background: var(--primary-dark-pink);
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.schedule-list, .work-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.schedule-item, .work-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.schedule-item:hover, .work-item:hover {
+  border-color: var(--text-primary-dark);
+  background: #f0fdf4;
+}
+
+.schedule-time, .work-date {
+  font-weight: 600;
+  color: #1f2937;
+  min-width: 80px;
+  font-size: 14px;
+}
+
+.schedule-info, .work-info {
+  flex: 1;
+}
+
+.customer-name {
+  font-weight: 500;
+  color: #1f2937;
+  margin-bottom: 2px;
+}
+
+.service-name {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 2px;
+}
+
+.appointment-notes {
+  font-size: 12px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.schedule-status, .work-status {
+  display: flex;
+  align-items: center;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.schedule-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.next-appointment-card {
+  background: #fffbeb;
+  border: 2px solid #f59e0b;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.appointment-details {
+  margin-bottom: 12px;
+}
+
+.appointment-time, .appointment-duration {
+  color: #92400e;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.preparation-notes {
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 4px solid #f59e0b;
+}
+
+.preparation-notes strong {
+  color: #92400e;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.preparation-notes p {
+  margin: 0;
+  color: #374151;
+  font-style: italic;
+}
+
+.performance-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.perf-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #f0fdf4;
+  border-radius: 6px;
+}
+
+.perf-item .label {
+  color: #065f46;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.perf-item .value {
+  color: var(--text-primary-dark);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.tool-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.tool-btn {
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.tool-btn.photo {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+}
+
+.tool-btn.notes {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.tool-btn.appointments {
+  background: linear-gradient(135deg, var(--primary-dark-pink), var(--primary-dark-pink-dark));
+  color: white;
+}
+
+.tool-btn.customers {
+  background: linear-gradient(135deg, var(--primary-dark-pink), var(--primary-dark-pink-dark));
+  color: white;
+}
+
+.tool-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.error-banner {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: var(--text-primary-dark);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 1000;
+}
+
+.retry-btn {
+  padding: 4px 8px;
+  background: var(--primary-dark-pink);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f4f6;
+  border-left: 4px solid var(--primary-dark-pink);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .technician-dashboard {
+    padding: 16px;
+  }
+  
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .dashboard-section {
+    padding: 16px;
+  }
+  
+  .action-buttons {
+    grid-template-columns: 1fr;
+  }
+  
+  .tool-buttons {
+    grid-template-columns: 1fr;
+  }
+  
+  .performance-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .schedule-item, .work-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

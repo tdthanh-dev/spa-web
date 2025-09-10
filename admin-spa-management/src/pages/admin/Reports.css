@@ -1,0 +1,490 @@
+.reports {
+  padding: var(--spacing-6);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.reports-header {
+  margin-bottom: var(--spacing-6);
+}
+
+.reports-header h1 {
+  color: var(--color-gray-900);
+  font-size: var(--font-size-3xl);
+  margin-bottom: var(--spacing-2);
+}
+
+.reports-header p {
+  color: var(--color-gray-600);
+  font-size: var(--font-size-lg);
+}
+
+/* Date Filter */
+.date-filter {
+  display: flex;
+  gap: var(--spacing-4);
+  align-items: center;
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-4);
+  background: white;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.filter-group label {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
+  font-size: var(--font-size-sm);
+}
+
+.filter-group input {
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 2px solid var(--color-gray-300);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-base);
+  transition: border-color var(--transition-duration-300);
+}
+
+.filter-group input:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+}
+
+.filter-btn {
+  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--color-primary-600);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-lg);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background-color var(--transition-duration-300);
+  margin-top: auto;
+}
+
+.filter-btn:hover {
+  background: var(--color-primary-700);
+}
+
+/* Tab Navigation */
+.reports-tabs {
+  display: flex;
+  margin-bottom: var(--spacing-6);
+  border-bottom: 2px solid var(--color-gray-200);
+}
+
+.tab-btn {
+  padding: var(--spacing-3) var(--spacing-6);
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--color-gray-600);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-duration-300);
+}
+
+.tab-btn:hover {
+  color: var(--color-primary-600);
+  background: var(--color-primary-50);
+}
+
+.tab-btn.active {
+  color: var(--color-primary-600);
+  border-bottom-color: var(--color-primary-600);
+  background: var(--color-primary-50);
+}
+
+/* Tab Content */
+.tab-content {
+  background: white;
+  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow);
+}
+
+/* Overview Tab */
+.report-overview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-6);
+}
+
+.metric-card {
+  background: linear-gradient(135deg, var(--color-primary-50) 0%, white 100%);
+  padding: var(--spacing-6);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--color-primary-200);
+  text-align: center;
+}
+
+.metric-value {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-900);
+  margin-bottom: var(--spacing-2);
+}
+
+.metric-label {
+  color: var(--color-gray-700);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--spacing-2);
+}
+
+.metric-change {
+  color: var(--color-gray-500);
+  font-size: var(--font-size-sm);
+}
+
+/* Charts Section */
+.charts-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-6);
+}
+
+.chart-container {
+  background: var(--color-gray-50);
+  padding: var(--spacing-6);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--color-gray-200);
+}
+
+.chart-container h3 {
+  color: var(--color-gray-900);
+  margin-bottom: var(--spacing-4);
+  font-size: var(--font-size-lg);
+}
+
+/* Revenue Chart */
+.revenue-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.chart-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.bar-label {
+  min-width: 120px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
+}
+
+.bar-fill {
+  height: 20px;
+  border-radius: var(--border-radius-sm);
+  min-width: 50px;
+  transition: width var(--transition-duration-500);
+}
+
+.bar-value {
+  min-width: 100px;
+  text-align: right;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-900);
+}
+
+/* Technician Chart */
+.technician-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.chart-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.technician-name {
+  min-width: 120px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
+}
+
+.appointment-count {
+  min-width: 80px;
+  text-align: right;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-900);
+}
+
+.progress-bar {
+  height: 20px;
+  border-radius: var(--border-radius-sm);
+  flex: 1;
+  transition: width var(--transition-duration-500);
+}
+
+/* Report Tables */
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-4);
+}
+
+.report-header h3 {
+  color: var(--color-gray-900);
+  font-size: var(--font-size-xl);
+}
+
+.export-btn {
+  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--color-success-600);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-lg);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background-color var(--transition-duration-300);
+}
+
+.export-btn:hover {
+  background: var(--color-success-700);
+}
+
+/* Appointments Table */
+.appointments-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--spacing-4);
+}
+
+.appointments-table th,
+.appointments-table td {
+  padding: var(--spacing-3);
+  text-align: left;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.appointments-table th {
+  background: var(--color-gray-50);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-700);
+  border-bottom: 2px solid var(--color-gray-300);
+}
+
+.appointments-table tbody tr:hover {
+  background: var(--color-gray-50);
+}
+
+.status-badge {
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+}
+
+.status-badge.completed {
+  background: var(--color-success-100);
+  color: var(--color-success-700);
+}
+
+.status-badge.in_progress {
+  background: var(--color-primary-100);
+  color: var(--color-primary-700);
+}
+
+.status-badge.scheduled {
+  background: var(--color-warning-100);
+  color: var(--color-warning-700);
+}
+
+.status-badge.cancelled {
+  background: var(--color-error-100);
+  color: var(--color-error-700);
+}
+
+/* Revenue Table */
+.revenue-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--spacing-4);
+}
+
+.revenue-table th,
+.revenue-table td {
+  padding: var(--spacing-3);
+  text-align: left;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.revenue-table th {
+  background: var(--color-gray-50);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-700);
+  border-bottom: 2px solid var(--color-gray-300);
+}
+
+.revenue-table tbody tr:hover {
+  background: var(--color-gray-50);
+}
+
+/* Customers Grid */
+.customers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-4);
+}
+
+.customer-card {
+  background: var(--color-gray-50);
+  padding: var(--spacing-4);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--color-gray-200);
+  transition: all var(--transition-duration-300);
+}
+
+.customer-card:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+
+.customer-name {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-900);
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--spacing-2);
+}
+
+.customer-contact {
+  color: var(--color-gray-600);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-3);
+}
+
+.customer-contact div {
+  margin-bottom: var(--spacing-1);
+}
+
+.customer-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-sm);
+}
+
+.customer-stats div {
+  color: var(--color-gray-500);
+}
+
+/* Loading */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-20);
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--color-gray-200);
+  border-top: 4px solid var(--color-primary-600);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--spacing-4);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .charts-section {
+    grid-template-columns: 1fr;
+  }
+
+  .date-filter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-group {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .filter-group label {
+    min-width: 80px;
+    margin-bottom: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .reports {
+    padding: var(--spacing-4);
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .reports-tabs {
+    flex-direction: column;
+  }
+
+  .tab-btn {
+    border-bottom: none;
+    border-left: 3px solid transparent;
+  }
+
+  .tab-btn.active {
+    border-bottom: none;
+    border-left-color: var(--color-primary-600);
+  }
+
+  .appointments-table,
+  .revenue-table {
+    overflow-x: auto;
+  }
+
+  .customers-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-bar,
+  .chart-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-2);
+  }
+
+  .bar-label,
+  .technician-name {
+    min-width: auto;
+  }
+
+  .bar-fill,
+  .progress-bar {
+    width: 100%;
+    height: 24px;
+  }
+}

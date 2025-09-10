@@ -1,0 +1,43 @@
+/* Layout Component Styles */
+.layout { min-height: 100vh; display: flex; flex-direction: column; margin: 0; padding: 0; }
+
+/* Modern Feminine Header Design */
+.header { background: #fff5f8; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); border-bottom: 2px solid rgba(0, 0, 0, 0.8); position: fixed; top: 0; left: 0; right: 0; z-index: 1000; margin: 0; padding: 0; transition: all 0.3s ease; }
+
+/* Sticky header effect when scrolling */
+.header.sticky { background: rgba(255, 245, 248, 0.95); backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); border-bottom: 2px solid rgba(0, 0, 0, 0.9); }
+
+.nav { display: flex; justify-content: space-between; align-items: center; padding: 8px 2rem; max-width: 90rem; margin: 0 auto; margin-top: 0; margin-bottom: 0; }
+
+/* Logo Styling */
+.logo { display: flex; align-items: center; text-decoration: none; transition: all 0.3s ease; }
+.logo:hover { transform: scale(1.02); }
+
+/* Logo Text with Elegant Font and Gradient */
+.logo-text { font-family: 'Great Vibes', 'Dancing Script', cursive; font-size: 2.2rem; font-weight: 400; background: linear-gradient(135deg, #ff5c8a, #ff99aa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(255, 92, 138, 0.1); }
+
+/* Navigation Menu */
+.nav-links { display: flex; list-style: none; gap: 2.5rem; margin: 0; padding: 0; align-items: center; }
+.nav-links li a { color: #444; text-decoration: none; font-family: 'Poppins', 'Roboto', sans-serif; font-weight: 500; font-size: 0.95rem; transition: all 0.3s ease; padding: 0.5rem 0; position: relative; letter-spacing: 0.3px; }
+
+/* Hover effect with animated underline */
+.nav-links li a::after { content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 2px; background: linear-gradient(90deg, #ff6699, #ff99aa); transition: width 0.3s ease; border-radius: 1px; }
+.nav-links li a:hover { color: #ff6699; }
+.nav-links li a:hover::after { width: 100%; }
+
+/* Mobile Navigation Toggle */
+.mobile-menu-toggle { display: none; flex-direction: column; cursor: pointer; padding: 0.25rem; background: none; border: none; outline: none; }
+.mobile-menu-toggle span { width: 25px; height: 3px; background-color: #444; margin: 3px 0; transition: 0.3s; border-radius: 2px; }
+
+/* Mobile menu open state */
+.nav-links-open { display: flex !important; position: fixed; top: 3.5rem; left: 0; width: 100%; height: calc(100vh - 3.5rem); background: rgba(255, 245, 248, 0.98); backdrop-filter: blur(15px); flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 2rem; gap: 1.5rem; z-index: 999; box-shadow: 0 4px 20px rgba(255, 108, 154, 0.2); }
+.nav-links-open li a { font-size: 1.125rem; padding: 1rem 2rem; width: 80%; text-align: center; border-radius: 12px; background: linear-gradient(135deg, #fff5f8, #ffeef2); color: #444; border: 1px solid rgba(255, 108, 154, 0.2); transition: all 0.3s ease; }
+.nav-links-open li a:hover { background: linear-gradient(135deg, #ff6699, #ff99aa); color: white; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(255, 102, 153, 0.3); }
+
+.main-content { flex: 1; margin-top: 3.5rem; margin-bottom: 0; margin-left: 0; margin-right: 0; padding-left: 0; padding-right: 0; padding-bottom: 0; }
+.footer { background: linear-gradient(135deg, #fce7f3 0%, #fff 100%); border-top: 2px solid var(--border-light); margin-top: 0; margin-bottom: 0; margin-left: 0; margin-right: 0; }
+
+/* Responsive Design */
+@media (max-width: 1024px) { .nav { padding: 6px 1.5rem; } .nav-links { gap: 2rem; } }
+@media (max-width: 768px) { .nav { padding: 6px 1rem; max-width: 100%; } .logo-text { font-size: 1.8rem; } .nav-links { display: none; gap: 1.5rem; } .mobile-menu-toggle { display: flex; } .main-content { margin-top: 3rem; } }
+@media (max-width: 480px) { .nav { padding: 5px 0.75rem; } .logo-text { font-size: 1.6rem; } .main-content { margin-top: 2.8rem; } }

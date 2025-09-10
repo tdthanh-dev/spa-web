@@ -1,0 +1,99 @@
+# Override file for development environment
+# This file is automatically merged with docker-compose.yml
+
+version: '3.8'
+
+services:
+  # Development overrides for app
+  app:
+    environment:
+      # Database Configuration (same as main file)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://172.17.0.3:5432/crm_spa
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 1234
+
+      # Redis Configuration (same as main file)
+      SPRING_DATA_REDIS_HOST: 172.17.0.2
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_DATABASE: 0
+      SPRING_DATA_REDIS_TIMEOUT: 2000ms
+      SPRING_DATA_REDIS_LETTUCE_POOL_MAX_ACTIVE: 8
+      SPRING_DATA_REDIS_LETTUCE_POOL_MAX_IDLE: 8
+      SPRING_DATA_REDIS_LETTUCE_POOL_MIN_IDLE: 0
+      SPRING_DATA_REDIS_LETTUCE_POOL_MAX_WAIT: -1ms
+
+      # JWT Configuration
+      JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      JWT_EXPIRATION: 86400000
+      JWT_REFRESH_EXPIRATION: 604800000
+
+      # Email Configuration
+      SPRING_MAIL_HOST: smtp.gmail.com
+      SPRING_MAIL_PORT: 587
+      SPRING_MAIL_USERNAME: tdthanh.dev2025@gmail.com
+      SPRING_MAIL_PASSWORD: uwod xbag oxyd kwnf
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: true
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: true
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_TRUST: smtp.gmail.com
+
+      # OTP Configuration
+      OTP_EXPIRATION_MINUTES: 5
+
+      # Rate Limiting Configuration
+      RATE_LIMIT_REQUESTS_PER_MINUTE: 5
+      RATE_LIMIT_WINDOW_MINUTES: 1
+
+      # File Upload Configuration
+      APP_UPLOAD_DIR: src/main/resources/static/uploads
+      APP_UPLOAD_MAX_FILE_SIZE: 10MB
+      APP_UPLOAD_MAX_REQUEST_SIZE: 50MB
+      SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 10MB
+      SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 10MB
+      SPRING_SERVLET_MULTIPART_ENABLED: true
+
+      # Application Configuration
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8081
+
+      # Enable debug mode
+      JAVA_OPTS: "-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=*:5005"
+      # Enable more detailed logging
+      LOGGING_LEVEL_COM_HTTTQL_CRM_AUTH: DEBUG
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: DEBUG
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB_FILTER: DEBUG
+      LOGGING_LEVEL_ROOT: INFO
+      # Enable SQL logging
+      SPRING_JPA_SHOW_SQL: true
+      # Enable hot reload (if using Spring DevTools)
+      SPRING_DEVTOOLS_RESTART_ENABLED: true
+    ports:
+      - "8081:8081"
+      - "5005:5005"  # Debug port
+    volumes:
+      # Mount source code for hot reload (if using Spring DevTools)
+      - ./src:/app/src
+      - ~/.m2:/root/.m2
+    command: ["sh", "-c", "mvn spring-boot:run"]
+
+  # NOTE: postgres and redis services commented out because we're using external containers
+  # Development database with additional tools - DISABLED (using external container)
+  # postgres:
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     # Mount custom PostgreSQL config (optional)
+  #     - ./postgresql.conf:/etc/postgresql/postgresql.conf
+  #     - postgres_data:/var/lib/postgresql/data
+  #   command:
+  #     - "postgres"
+  #     - "-c"
+  #     - "config_file=/etc/postgresql/postgresql.conf"
+
+  # Redis with persistence in development - DISABLED (using external container)
+  # redis:
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #     - ./redis.conf:/etc/redis/redis.conf
+  #   command: redis-server /etc/redis/redis.conf

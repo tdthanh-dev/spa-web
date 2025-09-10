@@ -1,0 +1,36 @@
+.hotline-button{position:fixed!important;bottom:20px!important;right:20px!important;width:60px;height:60px;background:white;border:3px solid #e63946;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:99999!important;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(230,57,70,0.3)}
+.hotline-button:hover{background:#e63946;transform:scale(1.05);box-shadow:0 6px 20px rgba(230,57,70,0.5)}
+.hotline-button .phone-icon{font-size:1.5rem;color:#e63946;transition:all 0.3s ease}
+.hotline-button:hover .phone-icon{color:white}
+.hotline-message{position:fixed!important;bottom:30px!important;right:90px!important;background:linear-gradient(135deg,#ffe5ec,#ffd1dc);color:#d62828;padding:0.8rem 1rem;border-radius:20px;font-weight:600;font-size:0.9rem;white-space:nowrap;z-index:99998!important;opacity:0;transform:translateX(20px);transition:all 0.3s ease;box-shadow:0 4px 15px rgba(214,40,40,0.2);border:2px solid rgba(255,255,255,0.3)}
+.hotline-message::after{content:'';position:absolute;right:-10px;top:50%;transform:translateY(-50%);width:0;height:0;border-left:10px solid #ffd1dc;border-top:8px solid transparent;border-bottom:8px solid transparent}
+.hotline-message.show{opacity:1;transform:translateX(0)}
+.hotline-modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10000;overflow:hidden}
+.modal-content{background:transparent;border-radius:16px;padding:0;max-width:450px;width:90%;position:relative}
+.modal-close{position:absolute;top:0.5rem;right:1rem;background:rgba(255,255,255,0.9);border:none;font-size:1.2rem;color:#666;cursor:pointer;transition:all 0.3s ease;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;z-index:10001}
+.modal-close:hover{background:#fff;color:#d62828}
+.hotline-modal .form-container{display:flex;justify-content:center;align-items:center;margin:0 auto;max-width:400px;padding:0}
+.hotline-modal .contact-form{background:#fff;border:2px solid #f8b6c3;border-radius:12px;padding:2rem;box-shadow:0 8px 25px rgba(248,182,195,0.15);width:100%;max-width:400px}
+.hotline-modal .form-title{font-family:'Great Vibes',cursive;font-size:2rem;color:#e91e63;text-align:center;margin-bottom:1.5rem;font-weight:400;line-height:1.2}
+.hotline-modal .form-group{margin-bottom:1.2rem}
+.hotline-modal .form-group label{display:block;font-family:'Inter',sans-serif;font-size:0.9rem;font-weight:500;color:#374151;margin-bottom:0.5rem;text-align:left}
+.hotline-modal .form-input,.hotline-modal .form-textarea{width:100%;padding:0.75rem 1rem;border:1.5px solid #f8b6c3;border-radius:8px;font-family:'Inter',sans-serif;font-size:0.95rem;color:#374151;background:#fff;transition:border-color 0.3s ease;box-sizing:border-box}
+.hotline-modal .form-input::placeholder,.hotline-modal .form-textarea::placeholder{color:#9ca3af;font-size:0.9rem}
+.hotline-modal .form-input:focus,.hotline-modal .form-textarea:focus{outline:none;border-color:#ff99aa}
+.hotline-modal .form-input.error,.hotline-modal .form-textarea.error{border-color:#e63946;background-color:#fff5f5}
+.hotline-modal .form-textarea{resize:vertical;min-height:80px;line-height:1.5}
+.hotline-modal .form-actions{display:flex;justify-content:center;margin-top:1.5rem;gap:1rem}
+.hotline-modal .btn{padding:0.75rem 1.5rem;border:none;border-radius:25px;font-family:'Inter',sans-serif;font-size:0.95rem;font-weight:600;cursor:pointer;transition:all 0.3s ease;text-decoration:none;display:inline-block;text-align:center;min-width:120px}
+.hotline-modal .btn-cancel{background:#f8b6c3;color:white}
+.hotline-modal .btn-cancel:hover{background:#f69fb0}
+.hotline-modal .btn-submit{background:#81c784;color:white}
+.hotline-modal .btn-submit:hover{background:#66bb6a}
+.hotline-modal .btn-submit:disabled{background:#ccc!important;color:#666!important;cursor:not-allowed}
+.error-text{color:#e63946;font-size:0.85rem;font-weight:500;margin-top:0.25rem}
+.success-popup{position:fixed;bottom:100px;right:20px;background:#4caf50;color:white;padding:1rem 1.5rem;border-radius:8px;font-weight:600;z-index:10005}
+
+@media (max-width: 768px) { .hotline-button { width: 55px !important; height: 55px !important; bottom: 15px !important; right: 15px !important; } .hotline-message { right: 80px !important; bottom: 25px !important; font-size: 0.8rem; padding: 0.6rem 0.8rem; } .modal-content { max-width: 95%; } .hotline-modal .contact-form { padding: 1.5rem; } .hotline-modal .form-title { font-size: 1.8rem; } .hotline-modal .form-actions { flex-direction: column; gap: 0.75rem; } .hotline-modal .btn { width: 100%; } }
+@media (max-width: 480px) { .hotline-button { width: 50px !important; height: 50px !important; bottom: 10px !important; right: 10px !important; } .hotline-message { right: 70px !important; bottom: 20px !important; font-size: 0.75rem; padding: 0.5rem 0.7rem; } .modal-content { max-width: 98%; } .hotline-modal .contact-form { padding: 1.2rem; } .hotline-modal .form-title { font-size: 1.6rem; margin-bottom: 1rem; } .hotline-modal .form-group { margin-bottom: 1rem; } .hotline-modal .form-input, .hotline-modal .form-textarea { padding: 0.6rem 0.8rem; font-size: 0.9rem; } }
+
+@media (max-width:768px){.hotline-button{width:50px;height:50px;bottom:15px;right:15px}.hotline-button .phone-icon{font-size:1.3rem}.hotline-message{right:75px;bottom:25px;font-size:0.8rem;padding:0.6rem 0.8rem}.modal-content{max-width:95%}.hotline-modal .contact-form{padding:1.5rem}.hotline-modal .form-title{font-size:1.6rem}.hotline-modal .btn{min-width:100px;padding:0.6rem 1.2rem}}
+@media (max-width:480px){.hotline-button{width:45px;height:45px;bottom:10px;right:10px}.hotline-button .phone-icon{font-size:1.2rem}.hotline-message{right:65px;bottom:20px;font-size:0.75rem;padding:0.5rem 0.7rem}.hotline-modal .contact-form{padding:1.2rem}.hotline-modal .form-title{font-size:1.4rem}.hotline-modal .form-actions{flex-direction:column;gap:0.5rem}.hotline-modal .btn{width:100%}}

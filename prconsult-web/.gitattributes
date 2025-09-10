@@ -1,0 +1,129 @@
+# === GIT ATTRIBUTES FOR SPA MANAGEMENT ===
+# Cấu hình cách Git xử lý các loại file
+
+# === AUTO LINE ENDING ===
+# Normalize line endings cho tất cả text files
+* text=auto
+
+# === SPECIFIC FILE TYPES ===
+# Source code files - luôn sử dụng LF
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.sass text eol=lf
+*.html text eol=lf
+*.xml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+
+# Config files
+*.config.js text eol=lf
+*.config.mjs text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+.editorconfig text eol=lf
+.eslintrc* text eol=lf
+.prettierrc* text eol=lf
+package.json text eol=lf
+package-lock.json text eol=lf
+yarn.lock text eol=lf
+
+# === BINARY FILES ===
+# Images
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.webp binary
+*.avif binary
+
+# Fonts
+*.woff binary
+*.woff2 binary
+*.eot binary
+*.ttf binary
+*.otf binary
+
+# Documents
+*.pdf binary
+*.doc binary
+*.docx binary
+*.xls binary
+*.xlsx binary
+*.ppt binary
+*.pptx binary
+
+# Archive files
+*.zip binary
+*.tar binary
+*.gz binary
+*.rar binary
+*.7z binary
+
+# Audio/Video
+*.mp3 binary
+*.mp4 binary
+*.avi binary
+*.mov binary
+*.wmv binary
+*.wav binary
+
+# === DIFF & MERGE STRATEGIES ===
+# Package files - special handling
+package.json merge=union
+package-lock.json binary
+
+# Generated files - ignore in diffs
+dist/* linguist-generated=true
+build/* linguist-generated=true
+
+# === LANGUAGE DETECTION ===
+# Override language detection for specific files
+*.css linguist-language=CSS
+*.scss linguist-language=SCSS  
+*.js linguist-language=JavaScript
+*.jsx linguist-language=JavaScript
+*.ts linguist-language=TypeScript
+*.tsx linguist-language=TypeScript
+
+# Exclude certain files from language stats
+public/assets/* linguist-generated=true
+src/assets/vendors/* linguist-vendored=true
+
+# === EXPORT SETTINGS ===
+# Files to exclude from archive exports
+.gitignore export-ignore
+.gitattributes export-ignore
+.github/ export-ignore
+docs/ export-ignore
+test/ export-ignore
+*.test.js export-ignore
+*.spec.js export-ignore
+
+# === CUSTOM ATTRIBUTES ===
+# Mark sensitive files (nếu có)
+*.env filter=git-crypt diff=git-crypt
+*.key filter=git-crypt diff=git-crypt
+config/production.* filter=git-crypt diff=git-crypt
+
+# === WORKING TREE ENCODING ===
+# Ensure UTF-8 encoding for text files
+*.js working-tree-encoding=UTF-8
+*.jsx working-tree-encoding=UTF-8
+*.css working-tree-encoding=UTF-8
+*.html working-tree-encoding=UTF-8
+*.json working-tree-encoding=UTF-8
+*.md working-tree-encoding=UTF-8
+
+# === MERGE DRIVERS ===
+# Specific merge strategies for certain files
+README.md merge=union
+CHANGELOG.md merge=union

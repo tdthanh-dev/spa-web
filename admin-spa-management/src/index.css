@@ -1,0 +1,256 @@
+/* ===== CSS ARCHITECTURE ===== */
+/* Import design tokens first */
+@import './styles/tokens.css';
+
+/* ===== RESET & BASE STYLES ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ===== ROOT VARIABLES ===== */
+/* Legacy variables and overrides */
+:root {
+  /* Typography - using design tokens */
+  font-family: var(--font-family-primary);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-normal);
+
+  /* Global colors - using design tokens */
+  color: var(--color-gray-900);
+  background-color: var(--color-gray-50);
+
+  /* ===== LEGACY COMPATIBILITY ===== */
+  /* These will be gradually removed as components migrate to new tokens */
+
+  /* Legacy text colors (now use color tokens) */
+  --text-primary-dark: var(--color-gray-900);
+  --text-secondary-dark: var(--color-gray-700);
+  --text-primary-light: #ffffff;
+  --text-secondary-light: #f5f5f5;
+
+  /* Legacy link colors */
+  --link-light-bg: var(--color-info);
+  --link-light-bg-hover: var(--color-info-700);
+  --link-dark-bg: #81d4fa;
+  --link-dark-bg-hover: #29b6f6;
+
+  /* Legacy status colors (now use semantic color tokens) */
+  --success: var(--color-success);
+  --warning: var(--color-warning);
+  --error: var(--color-error);
+  --info: var(--color-info);
+
+  /* Legacy status colors for dark backgrounds */
+  --success-light: var(--color-success-100);
+  --warning-light: var(--color-warning-100);
+  --error-light: var(--color-error-100);
+  --info-light: var(--color-info-100);
+
+  /* ===== SMOOTH RENDERING ===== */
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--color-primary-100) 0%, var(--color-gray-50) 100%);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-900);
+}
+
+/* ===== TYPOGRAPHY ===== */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-gray-900);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
+}
+
+h1 { font-size: var(--font-size-4xl); }
+h2 { font-size: var(--font-size-3xl); }
+h3 { font-size: var(--font-size-2xl); }
+h4 { font-size: var(--font-size-xl); }
+h5 { font-size: var(--font-size-lg); }
+h6 { font-size: var(--font-size-base); }
+
+/* ===== LINKS ===== */
+a {
+  color: var(--color-info-600);
+  text-decoration: underline;
+  transition: all var(--transition-duration-300) var(--transition-easing-in-out);
+  font-weight: var(--font-weight-medium);
+}
+
+a:hover {
+  color: var(--color-info-700);
+  text-decoration: none;
+  background-color: rgb(59 130 246 / 0.1);
+  padding: var(--spacing-0-5) var(--spacing-1);
+  border-radius: var(--border-radius);
+}
+
+/* Links on dark backgrounds */
+.dark-bg a {
+  color: var(--link-dark-bg);
+}
+
+.dark-bg a:hover {
+  color: var(--link-dark-bg-hover);
+  background-color: rgb(129 212 250 / 0.1);
+}
+
+/* ===== BUTTONS ===== */
+button {
+  border-radius: var(--border-radius-xl);
+  border: none;
+  padding: var(--spacing-2-5) var(--spacing-5);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-duration-300) var(--transition-easing-in-out);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+}
+
+button:focus,
+button:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* ===== FORM ELEMENTS ===== */
+input, textarea, select {
+  border-radius: var(--border-radius-lg);
+  border: var(--input-border-width) solid var(--color-primary-300);
+  padding: var(--input-padding-x);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  transition: all var(--transition-duration-300) var(--transition-easing-in-out);
+  background: white;
+  color: var(--color-gray-900);
+  height: var(--input-height);
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--color-primary-600);
+  box-shadow: 0 0 0 var(--focus-ring-offset) rgb(239 68 68 / 0.2);
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar {
+  width: var(--spacing-2);
+  height: var(--spacing-2);
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-primary-200);
+  border-radius: var(--border-radius);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary-700);
+  border-radius: var(--border-radius);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-800);
+}
+
+/* ===== SELECTION ===== */
+::selection {
+  background: var(--color-primary-200);
+  color: var(--color-gray-900);
+}
+
+/* ===== UTILITY CLASSES ===== */
+
+/* Text alignment */
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+
+/* Typography utilities */
+.text-pink {
+  color: var(--color-gray-900);
+  font-weight: var(--font-weight-semibold);
+}
+
+.text-accent {
+  color: var(--color-primary-900);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Background utilities */
+.bg-pink {
+  background: var(--light-pink-gradient);
+}
+
+.bg-dark {
+  background: var(--color-primary-900);
+  color: var(--text-primary-light);
+}
+
+/* Shadow utilities */
+.shadow-pink {
+  box-shadow: var(--shadow-pink);
+}
+
+/* Status text colors */
+.text-success {
+  color: var(--color-success);
+  font-weight: var(--font-weight-semibold);
+}
+
+.text-warning {
+  color: var(--color-warning);
+  font-weight: var(--font-weight-semibold);
+}
+
+.text-error {
+  color: var(--color-error);
+  font-weight: var(--font-weight-semibold);
+}
+
+.text-info {
+  color: var(--color-info);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Border radius utilities */
+.rounded {
+  border-radius: var(--border-radius-xl);
+}
+
+.rounded-full {
+  border-radius: var(--border-radius-full);
+}
+
+/* ===== RESPONSIVE HELPERS ===== */
+@media (max-width: 768px) {
+  :root {
+    font-size: var(--font-size-sm);
+  }
+
+  body {
+    font-size: calc(var(--font-size-sm) - 1px);
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    font-size: calc(var(--font-size-sm) - 1px);
+  }
+
+  body {
+    font-size: var(--font-size-xs);
+  }
+}

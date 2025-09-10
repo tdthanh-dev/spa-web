@@ -1,0 +1,68 @@
+# === EDITOR CONFIG FOR SPA MANAGEMENT ===
+# Đảm bảo consistency giữa các editor/IDE
+
+root = true
+
+# === DEFAULT SETTINGS ===
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+max_line_length = 80
+
+# === JAVASCRIPT/TYPESCRIPT ===
+[*.{js,jsx,ts,tsx}]
+indent_size = 2
+max_line_length = 100
+
+# === CSS/SCSS ===
+[*.{css,scss,sass}]
+indent_size = 2
+
+# === HTML ===
+[*.{html,htm}]
+indent_size = 2
+max_line_length = 120
+
+# === JSON ===
+[*.json]
+indent_size = 2
+insert_final_newline = false
+
+# === MARKDOWN ===
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = 120
+
+# === YAML ===
+[*.{yml,yaml}]
+indent_size = 2
+
+# === PACKAGE FILES ===
+[package.json]
+indent_size = 2
+
+# === CONFIG FILES ===
+[*.config.{js,mjs,ts}]
+indent_size = 2
+
+# === MAKEFILE ===
+[Makefile]
+indent_style = tab
+
+# === SHELL SCRIPTS ===
+[*.{sh,bash}]
+indent_size = 4
+end_of_line = lf
+
+# === DOCKERFILE ===
+[Dockerfile*]
+indent_size = 4
+
+# === SQL ===
+[*.sql]
+indent_size = 4
+max_line_length = 120
