@@ -1,7 +1,34 @@
 import apiClient from './apiClient';
 
 /**
+ * Extract data from ApiResponse format
+ * @param {Object} response - Axios response
+ * @returns {Object} Extracted data
+ */
+const extractApiResponse = (response) => {
+  if (!response || !response.data) {
+    throw new Error('Invalid response format');
+  }
+
+  const apiResponse = response.data;
+
+  // Check if response follows ApiResponse format
+  if (typeof apiResponse === 'object' && 'success' in apiResponse) {
+    if (!apiResponse.success) {
+      const error = new Error(apiResponse.message || apiResponse.error || 'API request failed');
+      error.response = { data: apiResponse };
+      throw error;
+    }
+    return apiResponse.data;
+  }
+
+  // Fallback for responses that don't use ApiResponse wrapper
+  return apiResponse;
+};
+
+/**
  * Base service class for common CRUD operations
+ * Handles ApiResponse format from backend
  */
 export class BaseService {
   constructor(endpoint) {
@@ -17,9 +44,10 @@ export class BaseService {
    * @param {string} params.sortBy - Sort field
    * @param {string} params.sortDir - Sort direction (asc/desc)
    * @param {Object} params.filters - Additional filters
+   * @param {string} customEndpoint - Optional custom endpoint to use instead of this.endpoint
    * @returns {Promise} API response
    */
-  async getAll(params = {}) {
+  async getAll(params = {}, customEndpoint = null) {
     const {
       page = 0,
       size = 20,
@@ -43,8 +71,9 @@ export class BaseService {
       }
     });
 
-    const response = await apiClient.get(`${this.endpoint}?${queryParams}`);
-    return response.data;
+    const endpoint = customEndpoint || this.endpoint;
+    const response = await apiClient.get(`${endpoint}?${queryParams}`);
+    return extractApiResponse(response);
   }
 
   /**
@@ -53,8 +82,26 @@ export class BaseService {
    * @returns {Promise} API response
    */
   async getById(id) {
-    const response = await apiClient.get(`${this.endpoint}/${id}`);
-    return response.data;
+    const url = `${this.endpoint}/${id}`;
+    console.log('🌐 [BaseService.getById] API Call:', url);
+    console.log('📋 [BaseService.getById] Endpoint:', this.endpoint);
+    
+    const response = await apiClient.get(url);
+    console.log('📥 [BaseService.getById] Raw Response:', response);
+    console.log('📊 [BaseService.getById] Response Data:', response.data);
+    
+    const extractedData = extractApiResponse(response);
+    console.log('✨ [BaseService.getById] Extracted Data:', extractedData);
+    
+    // Log loyalty program specific fields if present
+    if (extractedData) {
+      console.log('💰 [BaseService.getById] totalSpent:', extractedData.totalSpent);
+      console.log('⭐ [BaseService.getById] totalPoints:', extractedData.totalPoints); 
+      console.log('🏆 [BaseService.getById] tierCode:', extractedData.tierCode);
+      console.log('👑 [BaseService.getById] isVip:', extractedData.isVip);
+    }
+
+    return extractedData;
   }
 
   /**
@@ -64,7 +111,7 @@ export class BaseService {
    */
   async create(data) {
     const response = await apiClient.post(this.endpoint, data);
-    return response.data;
+    return extractApiResponse(response);
   }
 
   /**
@@ -75,7 +122,7 @@ export class BaseService {
    */
   async update(id, data) {
     const response = await apiClient.put(`${this.endpoint}/${id}`, data);
-    return response.data;
+    return extractApiResponse(response);
   }
 
   /**
@@ -85,7 +132,7 @@ export class BaseService {
    */
   async delete(id) {
     const response = await apiClient.delete(`${this.endpoint}/${id}`);
-    return response.data;
+    return extractApiResponse(response);
   }
 
   /**
@@ -109,7 +156,7 @@ export class BaseService {
    */
   async updateStatus(id, status) {
     const response = await apiClient.put(`${this.endpoint}/${id}/status`, { status });
-    return response.data;
+    return extractApiResponse(response);
   }
 }
 

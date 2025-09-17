@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { spaCustomersAPI, servicesAPI, appointmentsAPI, invoicesAPI, leadsAPI } from '@/services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { customersApi, servicesApi, appointmentsApi, invoicesApi, leadsApi } from '@/services';
 import { useAuth } from '@/hooks/useAuth';
-import './AdminDashboard.css';
 
-const AdminDashboard = ({ user }) => {
+
+const AdminDashboard = () => {
   const [stats, setStats] = useState({
     totalCustomers: 0,
     totalServices: 0,
@@ -19,13 +19,13 @@ const AdminDashboard = ({ user }) => {
     pendingInvoices: []
   });
 
-  const { userRole } = useAuth();
+  const { user } = useAuth(); // userRole not used
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [loadDashboardData]);
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setStats(prev => ({ ...prev, loading: true }));
 
@@ -37,28 +37,28 @@ const AdminDashboard = ({ user }) => {
         invoicesRes,
         leadsRes
       ] = await Promise.allSettled([
-        spaCustomersAPI.getAll(0, 1),
-        servicesAPI.getAll(0, 1),
-        appointmentsAPI.getTodayAppointments(),
-        invoicesAPI.getAll(0, 1),
-        leadsAPI.getStats()
+        customersApi.getCustomers({ page: 0, size: 1 }),
+        servicesApi.getServices({ page: 0, size: 1 }),
+        appointmentsApi.getTodayAppointments(),
+        invoicesApi.getInvoices({ page: 0, size: 1 }),
+        leadsApi.getLeadStats()
       ]);
 
       // Process results
-      const customerStats = customersRes.status === 'fulfilled' && customersRes.value.data?.success
-        ? customersRes.value.data.data : { totalElements: 0 };
+      const customerStats = customersRes.status === 'fulfilled'
+        ? customersRes.value : { totalElements: 0 };
 
-      const serviceStats = servicesRes.status === 'fulfilled' && servicesRes.value.data?.success
-        ? servicesRes.value.data.data : { totalElements: 0 };
+      const serviceStats = servicesRes.status === 'fulfilled'
+        ? servicesRes.value : { totalElements: 0 };
 
-      const appointmentData = appointmentsRes.status === 'fulfilled' && appointmentsRes.value.data?.success
-        ? appointmentsRes.value.data.data : [];
+      const appointmentData = appointmentsRes.status === 'fulfilled'
+        ? appointmentsRes.value : [];
 
-      const invoiceStats = invoicesRes.status === 'fulfilled' && invoicesRes.value.data?.success
-        ? invoicesRes.value.data.data : { totalElements: 0 };
+      const invoiceStats = invoicesRes.status === 'fulfilled'
+        ? invoicesRes.value : { totalElements: 0 };
 
       const leadStats = leadsRes.status === 'fulfilled'
-        ? leadsRes.value.data : { todayCount: 0, totalCount: 0 };
+        ? leadsRes.value : { todayCount: 0, totalCount: 0 };
 
       setStats({
         totalCustomers: customerStats.totalElements || 0,
@@ -78,7 +78,7 @@ const AdminDashboard = ({ user }) => {
       console.error('Error loading dashboard data:', error);
       setStats(prev => ({ ...prev, loading: false }));
     }
-  };
+  }, []);
 
   const loadRecentData = async () => {
     try {
@@ -87,19 +87,19 @@ const AdminDashboard = ({ user }) => {
         recentAppointmentsRes,
         pendingInvoicesRes
       ] = await Promise.allSettled([
-        spaCustomersAPI.getAll(0, 5),
-        appointmentsAPI.getAll(0, 5),
-        invoicesAPI.getAll(0, 5)
+        customersApi.getCustomers({ page: 0, size: 5 }),
+        appointmentsApi.getAppointments({ page: 0, size: 5 }),
+        invoicesApi.getInvoices({ page: 0, size: 5 })
       ]);
 
-      const recentCustomers = recentCustomersRes.status === 'fulfilled' && recentCustomersRes.value.data?.success
-        ? recentCustomersRes.value.data.data.content || [] : [];
+      const recentCustomers = recentCustomersRes.status === 'fulfilled'
+        ? recentCustomersRes.value.content || [] : [];
 
-      const recentAppointments = recentAppointmentsRes.status === 'fulfilled' && recentAppointmentsRes.value.data?.success
-        ? recentAppointmentsRes.value.data.content || [] : [];
+      const recentAppointments = recentAppointmentsRes.status === 'fulfilled'
+        ? recentAppointmentsRes.value.content || [] : [];
 
-      const pendingInvoices = pendingInvoicesRes.status === 'fulfilled' && pendingInvoicesRes.value.data?.success
-        ? (pendingInvoicesRes.value.data.data.content || []).filter(inv => inv.status === 'UNPAID') : [];
+      const pendingInvoices = pendingInvoicesRes.status === 'fulfilled'
+        ? (pendingInvoicesRes.value.content || []).filter(inv => inv.status === 'UNPAID') : [];
 
       setRecentData({
         recentCustomers,

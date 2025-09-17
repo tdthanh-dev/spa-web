@@ -1,92 +1,49 @@
 version: '3.8'
 
 services:
-  # NOTE: PostgreSQL và Redis containers đã chạy riêng biệt
-  # Container IDs: postgres(97cbc867ca58), redis(6b5a88614450)
-  # Không tạo services mới, sử dụng external containers
-
-  # CRM Application
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: crm-app
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: crm-postgres
     restart: unless-stopped
-    ports:
-      - "8081:8081"
     environment:
-      # Database Configuration (external containers)
-      SPRING_DATASOURCE_URL: jdbc:postgresql://172.17.0.3:5432/crm_spa
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: 1234
-
-      # Redis Configuration (external containers)
-      SPRING_DATA_REDIS_HOST: 172.17.0.2
-      SPRING_DATA_REDIS_PORT: 6379
-      SPRING_DATA_REDIS_DATABASE: 0
-      SPRING_DATA_REDIS_TIMEOUT: 2000ms
-      SPRING_DATA_REDIS_LETTUCE_POOL_MAX_ACTIVE: 8
-      SPRING_DATA_REDIS_LETTUCE_POOL_MAX_IDLE: 8
-      SPRING_DATA_REDIS_LETTUCE_POOL_MIN_IDLE: 0
-      SPRING_DATA_REDIS_LETTUCE_POOL_MAX_WAIT: -1ms
-
-      # Application Configuration
-      SPRING_PROFILES_ACTIVE: docker
-      SERVER_PORT: 8081
-
-    # NOTE: depends_on disabled vì sử dụng external containers
-    # depends_on:
-    #   postgres:
-    #     condition: service_healthy
-    #   redis:
-    #     condition: service_healthy
+      POSTGRES_DB: crm_spa
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     networks:
       - crm-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 60s
 
-  # PgAdmin (Database Management - Optional)
-  # NOTE: Sử dụng external PostgreSQL container (97cbc867ca58)
-  pgadmin:
-    image: dpage/pgadmin4:8
-    container_name: crm-pgadmin
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: crm-redis
     restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@crm-spa.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
     ports:
-      - "5050:80"
-    # depends_on: disabled for external containers
-    # depends_on:
-    #   - postgres
-    networks:
-      - crm-network
+      - "6379:6379"
     volumes:
-      - pgadmin_data:/var/lib/pgadmin
-
-  # Redis Commander (Redis Management - Optional)
-  # NOTE: Sử dụng external Redis container (6b5a88614450)
-  redis-commander:
-    image: rediscommander/redis-commander:latest
-    container_name: crm-redis-commander
-    restart: unless-stopped
-    environment:
-      REDIS_HOSTS: local:redis:6379
-    ports:
-      - "8082:8081"
-    # depends_on: disabled for external containers
-    # depends_on:
-    #   - redis
+      - redis_data:/data
     networks:
       - crm-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
-  pgadmin_data:
+  postgres_data:
+    driver: local
+  redis_data:
     driver: local
 
 networks:

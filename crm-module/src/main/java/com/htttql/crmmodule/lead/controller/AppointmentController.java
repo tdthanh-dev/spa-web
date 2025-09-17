@@ -1,6 +1,7 @@
 package com.htttql.crmmodule.lead.controller;
 
 import com.htttql.crmmodule.common.dto.ApiResponse;
+import com.htttql.crmmodule.common.dto.PageResponse;
 import com.htttql.crmmodule.lead.dto.AppointmentRequest;
 import com.htttql.crmmodule.lead.dto.AppointmentResponse;
 import com.htttql.crmmodule.lead.service.IAppointmentService;
@@ -33,9 +34,10 @@ public class AppointmentController {
     @SecurityRequirement(name = "Bearer Authentication")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST', 'TECHNICIAN')")
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<AppointmentResponse>>> getAllAppointments(Pageable pageable) {
+    public ResponseEntity<ApiResponse<PageResponse<AppointmentResponse>>> getAllAppointments(Pageable pageable) {
         Page<AppointmentResponse> appointments = appointmentService.getAllAppointments(pageable);
-        return ResponseEntity.ok(ApiResponse.success(appointments, "Appointments retrieved successfully"));
+        PageResponse<AppointmentResponse> response = PageResponse.from(appointments);
+        return ResponseEntity.ok(ApiResponse.success(response, "Appointments retrieved successfully"));
     }
 
     @Operation(summary = "Get appointment by ID")

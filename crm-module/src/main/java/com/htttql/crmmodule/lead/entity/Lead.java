@@ -5,8 +5,9 @@ import com.htttql.crmmodule.common.entity.BaseEntity;
 import com.htttql.crmmodule.common.enums.LeadStatus;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
 import lombok.*;
+
+import java.time.LocalDateTime;
 
 /**
  * Lead entity for potential customers - Simplified version
@@ -19,8 +20,8 @@ import lombok.*;
         @Index(name = "idx_lead_created", columnList = "created_at DESC"),
         @Index(name = "idx_lead_ip", columnList = "ip_address")
 }, uniqueConstraints = {
-        @UniqueConstraint(name = "uk_lead_phone_date", columnNames = { "phone", "created_date" }),
-        @UniqueConstraint(name = "uk_lead_ip_date", columnNames = { "ip_address", "created_date" })
+        @UniqueConstraint(name = "uk_lead_phone_date", columnNames = { "phone", "created_at" }),
+        @UniqueConstraint(name = "uk_lead_ip_date", columnNames = { "ip_address", "created_at" })
 })
 @Getter
 @Setter
@@ -52,14 +53,15 @@ public class Lead extends BaseEntity {
     @Column(name = "user_agent", columnDefinition = "TEXT")
     private String userAgent;
 
-    @Column(name = "created_date", nullable = false)
-    private java.sql.Date createdDate;
-
     @Column(name = "customer_id")
     private Long customerId;
 
     @Column(name = "is_existing_customer")
     private Boolean isExistingCustomer;
+
+    // Legacy field for backward compatibility
+    @Column(name = "created_date", columnDefinition = "TIMESTAMPTZ")
+    private LocalDateTime createdDate;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
@@ -68,20 +70,9 @@ public class Lead extends BaseEntity {
 
     @PrePersist
     protected void onCreate() {
-        super.onCreate();
+        super.onCreate(); // Call parent method first
         if (createdDate == null) {
-            createdDate = new java.sql.Date(System.currentTimeMillis());
-        }
-        if (phone != null) {
-            phone = phone.replaceAll("[^0-9]", "");
-        }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        super.onUpdate();
-        if (phone != null) {
-            phone = phone.replaceAll("[^0-9]", "");
+            createdDate = getCreatedAt(); // Sync createdDate with createdAt for backward compatibility
         }
     }
 }

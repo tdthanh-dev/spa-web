@@ -1,6 +1,7 @@
 package com.htttql.crmmodule.billing.controller;
 
 import com.htttql.crmmodule.common.dto.ApiResponse;
+import com.htttql.crmmodule.common.dto.PageResponse;
 import com.htttql.crmmodule.billing.dto.InvoiceRequest;
 import com.htttql.crmmodule.billing.dto.InvoiceResponse;
 import com.htttql.crmmodule.billing.dto.InvoiceStatusRequest;
@@ -31,7 +32,7 @@ public class InvoiceController {
     @SecurityRequirement(name = "Bearer Authentication")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<InvoiceResponse>>> getAllInvoices(
+    public ResponseEntity<ApiResponse<PageResponse<InvoiceResponse>>> getAllInvoices(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "invoiceId") String sortBy,
@@ -41,7 +42,8 @@ public class InvoiceController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<InvoiceResponse> invoices = invoiceService.getAllInvoices(pageable);
-        return ResponseEntity.ok(ApiResponse.success(invoices, "Invoices retrieved successfully"));
+        PageResponse<InvoiceResponse> response = PageResponse.from(invoices);
+        return ResponseEntity.ok(ApiResponse.success(response, "Invoices retrieved successfully"));
     }
 
     @Operation(summary = "Get invoice by ID")

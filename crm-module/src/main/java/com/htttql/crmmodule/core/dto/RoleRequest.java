@@ -22,7 +22,4 @@ public class RoleRequest {
 
     @Size(max = 200, message = "Description must not exceed 200 characters")
     private String description;
-
-    @Size(max = 500, message = "Permissions must not exceed 500 characters")
-    private String permissions;
 }

@@ -34,7 +34,11 @@ public class SecurityContextService {
             // This assumes the staff ID is stored in the JWT claims during authentication
             Object principal = authentication.getPrincipal();
 
-            if (principal instanceof String) {
+            if (principal instanceof UserPrincipal) {
+                // Principal is UserPrincipal object, get ID directly
+                UserPrincipal userPrincipal = (UserPrincipal) principal;
+                return userPrincipal.getId();
+            } else if (principal instanceof String) {
                 // This is the username, we need to get staff ID from database or cache
                 // For now, return a placeholder - this should be improved
                 log.warn("Using placeholder staff ID for username: {}", username);

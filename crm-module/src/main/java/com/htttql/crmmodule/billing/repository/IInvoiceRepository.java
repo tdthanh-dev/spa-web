@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -29,4 +31,22 @@ public interface IInvoiceRepository extends JpaRepository<Invoice, Long> {
             @Param("status") InvoiceStatus status,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM Invoice i WHERE i.customerCase.caseId = :caseId")
+    BigDecimal getTotalAmountByCaseId(@Param("caseId") Long caseId);
+
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Invoice i JOIN i.payments p WHERE i.customerCase.caseId = :caseId")
+    BigDecimal getPaidAmountByCaseId(@Param("caseId") Long caseId);
+
+    /**
+     * Calculate total revenue within date range
+     */
+    @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM Invoice i WHERE i.createdAt BETWEEN :start AND :end")
+    BigDecimal sumRevenueByDateRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    /**
+     * Calculate total revenue for specific date
+     */
+    @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM Invoice i WHERE DATE(i.createdAt) = :date")
+    BigDecimal sumRevenueByDate(@Param("date") LocalDate date);
 }

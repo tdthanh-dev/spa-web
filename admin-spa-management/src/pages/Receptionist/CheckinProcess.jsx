@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { appointmentsAPI, spaCustomersAPI } from '@/services/api';
+import { appointmentsApi } from '@/services';
 import { formatDateTimeVN } from '@/utils/dateUtils';
-import './CheckinProcess.css';
+
 
 const CheckinProcess = () => {
   const [todayAppointments, setTodayAppointments] = useState([]);
@@ -16,11 +16,9 @@ const CheckinProcess = () => {
   const loadTodayAppointments = async () => {
     try {
       setLoading(true);
-      const response = await appointmentsAPI.getTodayAppointments();
+      const response = await appointmentsApi.getTodayAppointments();
 
-      if (response.data?.success) {
-        setTodayAppointments(response.data.data || []);
-      }
+      setTodayAppointments(response || []);
     } catch (error) {
       console.error('Error loading appointments:', error);
     } finally {
@@ -30,7 +28,7 @@ const CheckinProcess = () => {
 
   const handleStatusUpdate = async (appointmentId, newStatus) => {
     try {
-      await appointmentsAPI.updateStatus(appointmentId, newStatus);
+      await appointmentsApi.updateAppointmentStatus(appointmentId, { status: newStatus });
       await loadTodayAppointments(); // Refresh data
 
       if (selectedAppointment && selectedAppointment.id === appointmentId) {
@@ -58,7 +56,7 @@ const CheckinProcess = () => {
   const filteredAppointments = todayAppointments.filter(apt => {
     if (!searchTerm) return true;
     return apt.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           apt.phone?.includes(searchTerm);
+      apt.phone?.includes(searchTerm);
   });
 
   const getStatusBadge = (status) => {

@@ -1,47 +1,82 @@
 package com.htttql.crmmodule.core.service;
 
+import com.htttql.crmmodule.common.enums.PermissionLevel;
 import com.htttql.crmmodule.common.enums.TierCode;
 import com.htttql.crmmodule.common.exception.BadRequestException;
 import com.htttql.crmmodule.common.exception.ResourceNotFoundException;
 import com.htttql.crmmodule.common.factory.CustomerResponseFactory;
 import com.htttql.crmmodule.core.dto.CustomerRequest;
 import com.htttql.crmmodule.core.dto.CustomerResponse;
-import com.htttql.crmmodule.core.dto.StaffPermissionSummaryDTO;
+import com.htttql.crmmodule.core.dto.StaffFieldPermissions;
 import com.htttql.crmmodule.core.entity.Customer;
 import com.htttql.crmmodule.core.entity.Tier;
 import com.htttql.crmmodule.core.repository.ICustomerRepository;
 import com.htttql.crmmodule.core.repository.ITierRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Slf4j
 @Service("customerService")
-@RequiredArgsConstructor
 public class CustomerServiceImpl implements ICustomerService {
+
+    private static final Logger logger = LoggerFactory.getLogger(CustomerServiceImpl.class);
 
     private final ICustomerRepository customerRepository;
     private final ITierRepository tierRepository;
     private final ICustomerTierService customerTierService;
     private final CustomerResponseFactory responseFactory;
-    private final IPermissionService permissionService;
+    private final IStaffFieldPermissionsService staffFieldPermissionsService;
 
-    @Override
-    @Transactional(readOnly = true)
-    public Page<CustomerResponse> getAllCustomers(Pageable pageable) {
-        Page<Customer> customers = customerRepository.findAll(pageable);
-        return customers.map(this::toResponse);
+    public CustomerServiceImpl(ICustomerRepository customerRepository,
+                              ITierRepository tierRepository,
+                              ICustomerTierService customerTierService,
+                              CustomerResponseFactory responseFactory,
+                              IStaffFieldPermissionsService staffFieldPermissionsService) {
+        this.customerRepository = customerRepository;
+        this.tierRepository = tierRepository;
+        this.customerTierService = customerTierService;
+        this.responseFactory = responseFactory;
+        this.staffFieldPermissionsService = staffFieldPermissionsService;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public CustomerResponse getCustomerById(Long id) {
+    public Page<CustomerResponse> getAllCustomers(Pageable pageable, Long staffId) {
+        Page<Customer> customers = customerRepository.findAll(pageable);
+
+        // Get staff permissions
+        StaffFieldPermissions staffPermissions = null;
+        try {
+            staffPermissions = staffFieldPermissionsService.getByStaffId(staffId);
+        } catch (Exception e) {
+            // If permissions not found, return full data
+            logger.debug("No permissions found for staff ID: {}, returning full data", staffId);
+        }
+
+        final StaffFieldPermissions finalPermissions = staffPermissions;
+        return customers.map(customer -> toResponseWithPermissions(customer, finalPermissions));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CustomerResponse getCustomerById(Long id, Long staffId) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", id));
-        return toResponse(customer);
+
+        // Get staff permissions
+        StaffFieldPermissions staffPermissions = null;
+        try {
+            staffPermissions = staffFieldPermissionsService.getByStaffId(staffId);
+        } catch (Exception e) {
+            // If permissions not found, return full data
+            logger.debug("No permissions found for staff ID: {}, returning full data", staffId);
+        }
+
+        return toResponseWithPermissions(customer, staffPermissions);
     }
 
     @Override
@@ -138,104 +173,106 @@ public class CustomerServiceImpl implements ICustomerService {
         customerTierService.refreshAllCustomerTiers();
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public CustomerResponse applyFieldLevelPermissions(CustomerResponse customer, Long staffId, Long customerId) {
-        // Check permissions for each field and mask/nullify if not allowed
+    private CustomerResponse toResponseWithPermissions(Customer customer, StaffFieldPermissions permissions) {
+        CustomerResponse response = responseFactory.createFullResponse(customer);
 
-        // Basic information fields
-        if (!permissionService.canReadCustomerName(staffId, customerId)) {
-            customer.setFullName("***"); // Mask name
+        // Apply field-level permissions if permissions exist
+        if (permissions != null) {
+            applyFieldMasking(response, permissions);
         }
 
-        if (!permissionService.canReadCustomerPhone(staffId, customerId)) {
-            customer.setPhone("***"); // Mask phone
-        }
-
-        if (!permissionService.canReadCustomerEmail(staffId, customerId)) {
-            customer.setEmail("***"); // Mask email
-        }
-
-        if (!permissionService.canReadCustomerAddress(staffId, customerId)) {
-            customer.setDisplayAddress("***"); // Mask address
-        }
-
-        if (!permissionService.canReadCustomerDOB(staffId, customerId)) {
-            customer.setDob(null); // Hide DOB
-        }
-
-        if (!permissionService.canReadCustomerNotes(staffId, customerId)) {
-            customer.setNotes("***"); // Mask notes
-        }
-
-        // Financial information (more sensitive)
-        if (!permissionService.canViewCustomerFinancial(staffId, customerId)) {
-            customer.setTotalSpent(null); // Hide spending
-            customer.setTotalPoints(null); // Hide points
-        }
-
-        // Tier and VIP status
-        if (!permissionService.canViewCustomerFinancial(staffId, customerId)) {
-            customer.setTierCode(null); // Hide tier code
-            customer.setTierName(null); // Hide tier name
-            customer.setIsVip(null); // Hide VIP status
-        }
-
-        return customer;
+        return response;
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public void validateUpdatePermissions(CustomerRequest request, Long staffId, Long customerId) {
-        // Check if staff can update the fields they're trying to modify
+    private void applyFieldMasking(CustomerResponse response, StaffFieldPermissions permissions) {
+        // Apply masking only when permission is explicitly NO
+        // VIEW and EDIT permissions show full data
+        // null permissions show full data
 
-        if (request.getFullName() != null && !permissionService.canWriteCustomerName(staffId, customerId)) {
-            throw new SecurityException("No permission to update customer name");
+        // Mask customer name based on permission
+        if (permissions.getCustomerName() == PermissionLevel.NO) {
+            response.setFullName(maskName(response.getFullName()));
         }
 
-        if (request.getPhone() != null && !permissionService.canWriteCustomerPhone(staffId, customerId)) {
-            throw new SecurityException("No permission to update customer phone");
+        // Mask phone based on permission
+        if (permissions.getCustomerPhone() == PermissionLevel.NO) {
+            response.setPhone(maskPhone(response.getPhone()));
         }
 
-        if (request.getEmail() != null && !permissionService.canWriteCustomerEmail(staffId, customerId)) {
-            throw new SecurityException("No permission to update customer email");
+        // Mask email based on permission
+        if (permissions.getCustomerEmail() == PermissionLevel.NO) {
+            response.setEmail(maskEmail(response.getEmail()));
         }
 
-        if (request.getAddress() != null && !permissionService.canWriteCustomerAddress(staffId, customerId)) {
-            throw new SecurityException("No permission to update customer address");
+        // Mask DOB based on permission
+        if (permissions.getCustomerDob() == PermissionLevel.NO) {
+            response.setDob(null);
         }
 
-        if (request.getDob() != null && !permissionService.canWriteCustomerDOB(staffId, customerId)) {
-            throw new SecurityException("No permission to update customer date of birth");
+        // Mask address based on permission
+        if (permissions.getCustomerAddress() == PermissionLevel.NO) {
+            response.setDisplayAddress(maskAddress(response.getDisplayAddress()));
         }
 
-        if (request.getNotes() != null && !permissionService.canWriteCustomerNotes(staffId, customerId)) {
-            throw new SecurityException("No permission to update customer notes");
+        // Mask notes based on permission
+        if (permissions.getCustomerNotes() == PermissionLevel.NO) {
+            response.setNotes(maskText(response.getNotes()));
         }
-    }
 
-    @Override
-    @Transactional(readOnly = true)
-    public StaffPermissionSummaryDTO createStaffPermissionSummary(Long staffId, Long customerId) {
-        // Delegate to permission service
-        return permissionService.createStaffPermissionSummary(staffId, customerId);
-    }
+        // Financial data - only show if VIEW or EDIT permission
+        if (permissions.getCustomerTotalSpent() == PermissionLevel.NO) {
+            response.setTotalSpent(null);
+        }
 
-    @Override
-    @Transactional(readOnly = true)
-    public java.util.Map<String, Boolean> createFieldPermissionMap(Long staffId, String fieldName, Long customerId) {
-        boolean canRead = permissionService.canReadCustomerField(staffId, fieldName, customerId);
-        boolean canWrite = permissionService.canWriteCustomerField(staffId, fieldName, customerId);
+        if (permissions.getCustomerTotalPoints() == PermissionLevel.NO) {
+            response.setTotalPoints(null);
+        }
 
-        java.util.Map<String, Boolean> result = new java.util.HashMap<>();
-        result.put("canRead", canRead);
-        result.put("canWrite", canWrite);
-        result.put("hasAnyPermission", canRead || canWrite);
+        // Tier and VIP status - mask if no permission
+        if (permissions.getCustomerTier() == PermissionLevel.NO) {
+            response.setTierCode(null);
+            response.setTierName(null);
+        }
 
-        return result;
+        if (permissions.getCustomerVipStatus() == PermissionLevel.NO) {
+            response.setIsVip(null);
+        }
     }
 
     private CustomerResponse toResponse(Customer customer) {
         return responseFactory.createBasicResponse(customer);
+    }
+
+    // Helper methods for masking sensitive data
+    private String maskName(String name) {
+        if (name == null || name.length() <= 2) return "***";
+        return name.charAt(0) + "***" + name.charAt(name.length() - 1);
+    }
+
+    private String maskPhone(String phone) {
+        if (phone == null) return "***";
+        String cleanPhone = phone.replaceAll("\\D", "");
+        if (cleanPhone.length() <= 4) return "***";
+        return cleanPhone.substring(0, 3) + "***" + cleanPhone.substring(cleanPhone.length() - 2);
+    }
+
+    private String maskEmail(String email) {
+        if (email == null) return "***";
+        int atIndex = email.indexOf('@');
+        if (atIndex <= 1) return "***";
+        String localPart = email.substring(0, atIndex);
+        String domain = email.substring(atIndex);
+        if (localPart.length() <= 2) return "***" + domain;
+        return localPart.charAt(0) + "***" + domain;
+    }
+
+    private String maskAddress(String address) {
+        if (address == null || address.length() <= 10) return "***";
+        return address.substring(0, 5) + "***" + address.substring(address.length() - 5);
+    }
+
+    private String maskText(String text) {
+        if (text == null || text.length() <= 5) return "***";
+        return text.substring(0, 3) + "***";
     }
 }

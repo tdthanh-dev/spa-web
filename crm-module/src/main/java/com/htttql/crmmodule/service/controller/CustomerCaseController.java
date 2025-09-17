@@ -1,6 +1,7 @@
 package com.htttql.crmmodule.service.controller;
 
 import com.htttql.crmmodule.common.dto.ApiResponse;
+import com.htttql.crmmodule.common.dto.PageResponse;
 import com.htttql.crmmodule.service.dto.CustomerCaseRequest;
 import com.htttql.crmmodule.service.dto.CustomerCaseResponse;
 import com.htttql.crmmodule.service.service.ICustomerCaseService;
@@ -29,13 +30,16 @@ public class CustomerCaseController {
 
     private final ICustomerCaseService customerCaseService;
 
-    @Operation(summary = "Get all customer cases with pagination")
+    @Operation(summary = "Get customer cases by customer ID")
     @SecurityRequirement(name = "Bearer Authentication")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TECHNICIAN', 'RECEPTIONIST')")
-    @GetMapping
-    public ResponseEntity<ApiResponse<Page<CustomerCaseResponse>>> getAllCustomerCases(Pageable pageable) {
-        Page<CustomerCaseResponse> cases = customerCaseService.getAllCustomerCases(pageable);
-        return ResponseEntity.ok(ApiResponse.success(cases, "Customer cases retrieved successfully"));
+    @GetMapping("/customer/{customerId}")
+    public ResponseEntity<ApiResponse<PageResponse<CustomerCaseResponse>>> getCustomerCasesByCustomerId(
+            @PathVariable Long customerId,
+            Pageable pageable) {
+        Page<CustomerCaseResponse> cases = customerCaseService.getCustomerCasesByCustomerId(customerId, pageable);
+        PageResponse<CustomerCaseResponse> response = PageResponse.from(cases);
+        return ResponseEntity.ok(ApiResponse.success(response, "Customer cases retrieved successfully"));
     }
 
     @Operation(summary = "Get customer case by ID")

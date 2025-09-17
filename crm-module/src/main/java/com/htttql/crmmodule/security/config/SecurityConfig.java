@@ -42,11 +42,18 @@ public class SecurityConfig {
             "/api/debug/**", // Debug endpoints (remove in production)
             "/api/leads", // Allow POST /api/leads without authentication
             "/api/accounts", // Allow POST /api/accounts without authentication
+            // Swagger UI v3
             "/swagger-ui/**",
             "/swagger-ui.html",
+            "/swagger-ui/index.html",
             "/v3/api-docs/**",
+            "/v3/api-docs.yaml",
             "/swagger-resources/**",
-            "/webjars/**"
+            "/swagger-resources",
+            "/configuration/ui",
+            "/configuration/security",
+            "/webjars/**",
+            "/actuator/**" // Health check endpoints
     };
 
     @Bean
@@ -77,10 +84,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow all OPTIONS requests (CORS
-                                                                                // preflight)
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow all OPTIONS requests (CORS preflight)
                         .requestMatchers(PUBLIC_URLS).permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("MANAGER")
+                        .requestMatchers("/api/admin/**").hasRole("MANAGER") // Admin functions require MANAGER role
                         .requestMatchers("/api/technician/**").hasAnyRole("TECHNICIAN", "MANAGER")
                         .requestMatchers("/api/receptionist/**").hasAnyRole("RECEPTIONIST", "MANAGER")
                         .anyRequest().authenticated())

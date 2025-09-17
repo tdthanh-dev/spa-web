@@ -1,6 +1,7 @@
 package com.htttql.crmmodule.service.service;
 
 import com.htttql.crmmodule.service.dto.*;
+import com.htttql.crmmodule.common.enums.AppointmentStatus;
 import com.htttql.crmmodule.core.repository.ICustomerRepository;
 import com.htttql.crmmodule.lead.repository.IAppointmentRepository;
 import com.htttql.crmmodule.lead.repository.ILeadRepository;
@@ -40,115 +41,45 @@ public class DashboardServiceImpl implements IDashboardService {
                 LocalDate monthStart = today.minusDays(29);
 
                 try {
-                        long todayAppointments = appointmentRepository
-                                        .findByStartAtBetween(startOfToday, endOfToday, null)
-                                        .getTotalElements();
+                        long todayAppointments = appointmentRepository.countByDate(today);                long todayCheckIns = appointmentRepository.countByDateAndStatus(today, AppointmentStatus.DONE);
 
-                        long todayCheckIns = appointmentRepository.findAll().stream()
-                                        .filter(apt -> apt.getStartAt().toLocalDate().equals(today)
-                                                        && apt.getStatus() != null
-                                                        && "COMPLETED".equals(apt.getStatus().name()))
-                                        .count();
+                long todayCompleted = appointmentRepository.countByDateAndStatus(today, AppointmentStatus.DONE);
 
-                        long todayCompleted = appointmentRepository.findAll().stream()
-                                        .filter(apt -> apt.getStartAt().toLocalDate().equals(today)
-                                                        && apt.getStatus() != null
-                                                        && "COMPLETED".equals(apt.getStatus().name()))
-                                        .count();
+                long todayNoShows = appointmentRepository.countByDateAndStatus(today, AppointmentStatus.CANCELLED);
 
-                        long todayNoShows = appointmentRepository.findAll().stream()
-                                        .filter(apt -> apt.getStartAt().toLocalDate().equals(today)
-                                                        && apt.getStatus() != null
-                                                        && "CANCELLED".equals(apt.getStatus().name()))
-                                        .count();
+                long pendingRequests = leadRepository.findAll().stream()
+                                .filter(lead -> "NEW".equals(lead.getStatus()))
+                                .count();
 
-                        long pendingRequests = leadRepository.findAll().stream()
-                                        .filter(lead -> "NEW".equals(lead.getStatus()))
-                                        .count();
+                long newCustomersToday = customerRepository.countByCreatedDate(today);
 
-                        long newCustomersToday = customerRepository.findAll().stream()
-                                        .filter(cust -> cust.getCreatedAt().toLocalDate().equals(today))
-                                        .count();
+                LocalDateTime weekStartTime = weekStart.atStartOfDay();
+                long weekAppointments = appointmentRepository.countByDateRange(weekStartTime, endOfToday);
 
-                        LocalDateTime weekStartTime = weekStart.atStartOfDay();
-                        long weekAppointments = appointmentRepository
-                                        .findByStartAtBetween(weekStartTime, endOfToday, null)
-                                        .getTotalElements();
+                BigDecimal weekRevenue = invoiceRepository.sumRevenueByDateRange(weekStartTime, endOfToday);
 
-                        BigDecimal weekRevenue = invoiceRepository.findAll().stream()
-                                        .filter(inv -> {
-                                                LocalDate invoiceDate = inv.getCreatedAt().toLocalDate();
-                                                return (invoiceDate.isEqual(weekStart)
-                                                                || invoiceDate.isAfter(weekStart))
-                                                                && (invoiceDate.isEqual(today) || invoiceDate
-                                                                                .isBefore(today.plusDays(1)));
-                                        })
-                                        .map(inv -> inv.getGrandTotal())
-                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                long weekNewCustomers = customerRepository.countByCreatedDateBetween(weekStartTime, endOfToday);
 
-                        long weekNewCustomers = customerRepository.findAll().stream()
-                                        .filter(cust -> {
-                                                LocalDate customerDate = cust.getCreatedAt().toLocalDate();
-                                                return (customerDate.isEqual(weekStart)
-                                                                || customerDate.isAfter(weekStart))
-                                                                && (customerDate.isEqual(today) || customerDate
-                                                                                .isBefore(today.plusDays(1)));
-                                        })
-                                        .count();
+                LocalDateTime monthStartTime = monthStart.atStartOfDay();
+                long monthAppointments = appointmentRepository.countByDateRange(monthStartTime, endOfToday);
 
-                        LocalDateTime monthStartTime = monthStart.atStartOfDay();
-                        long monthAppointments = appointmentRepository
-                                        .findByStartAtBetween(monthStartTime, endOfToday, null)
-                                        .getTotalElements();
+                BigDecimal monthRevenue = invoiceRepository.sumRevenueByDateRange(monthStartTime, endOfToday);
 
-                        BigDecimal monthRevenue = invoiceRepository.findAll().stream()
-                                        .filter(inv -> {
-                                                LocalDate invoiceDate = inv.getCreatedAt().toLocalDate();
-                                                return (invoiceDate.isEqual(monthStart)
-                                                                || invoiceDate.isAfter(monthStart))
-                                                                && (invoiceDate.isEqual(today) || invoiceDate
-                                                                                .isBefore(today.plusDays(1)));
-                                        })
-                                        .map(inv -> inv.getGrandTotal())
-                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                        long monthNewCustomers = customerRepository.findAll().stream()
-                                        .filter(cust -> {
-                                                LocalDate customerDate = cust.getCreatedAt().toLocalDate();
-                                                return (customerDate.isEqual(monthStart)
-                                                                || customerDate.isAfter(monthStart))
-                                                                && (customerDate.isEqual(today) || customerDate
-                                                                                .isBefore(today.plusDays(1)));
-                                        })
-                                        .count();
+                long monthNewCustomers = customerRepository.countByCreatedDateBetween(monthStartTime, endOfToday);
 
                         BigDecimal averageAppointmentValue = invoiceRepository.findAll().stream()
-                                        .map(inv -> inv.getGrandTotal())
+                                        .map(inv -> inv.getTotalAmount())
                                         .reduce(BigDecimal.ZERO, BigDecimal::add)
                                         .divide(BigDecimal.valueOf(Math.max(1, appointmentRepository.count())),
                                                         RoundingMode.HALF_UP);
 
                         long totalCustomers = customerRepository.count();
-                        long returningCustomers = customerRepository.findAll().stream()
-                                        .filter(cust -> appointmentRepository
-                                                        .findByCustomer_CustomerId(cust.getCustomerId()).size() > 1)
-                                        .count();
+                        long returningCustomers = appointmentRepository.countReturningCustomers();
                         double customerRetentionRate = totalCustomers > 0
                                         ? (double) returningCustomers / totalCustomers * 100
                                         : 0;
 
-                        long activeCustomers = customerRepository.findAll().stream()
-                                        .filter(cust -> appointmentRepository
-                                                        .findByCustomer_CustomerId(cust.getCustomerId()).stream()
-                                                        .anyMatch(apt -> {
-                                                                LocalDate aptDate = apt.getStartAt().toLocalDate();
-                                                                return (aptDate.isEqual(monthStart)
-                                                                                || aptDate.isAfter(monthStart))
-                                                                                && (aptDate.isEqual(today) || aptDate
-                                                                                                .isBefore(today.plusDays(
-                                                                                                                1)));
-                                                        }))
-                                        .count();
+                        long activeCustomers = appointmentRepository.countActiveCustomersInDateRange(monthStartTime, endOfToday);
 
                         long scheduledAppointments = appointmentRepository.findAll().stream()
                                         .filter(apt -> apt.getStatus() != null
@@ -234,25 +165,11 @@ public class DashboardServiceImpl implements IDashboardService {
                 List<ChartDataPoint> data = new ArrayList<>();
 
                 // Query real data from database
-                long scheduledCount = appointmentRepository.findAll().stream()
-                                .filter(apt -> apt.getStatus() != null && "SCHEDULED".equals(apt.getStatus().name()))
-                                .count();
-
-                long confirmedCount = appointmentRepository.findAll().stream()
-                                .filter(apt -> apt.getStatus() != null && "CONFIRMED".equals(apt.getStatus().name()))
-                                .count();
-
-                long inProgressCount = appointmentRepository.findAll().stream()
-                                .filter(apt -> apt.getStatus() != null && "IN_PROGRESS".equals(apt.getStatus().name()))
-                                .count();
-
-                long completedCount = appointmentRepository.findAll().stream()
-                                .filter(apt -> apt.getStatus() != null && "COMPLETED".equals(apt.getStatus().name()))
-                                .count();
-
-                long cancelledCount = appointmentRepository.findAll().stream()
-                                .filter(apt -> apt.getStatus() != null && "CANCELLED".equals(apt.getStatus().name()))
-                                .count();
+                long scheduledCount = appointmentRepository.countByStatus(AppointmentStatus.SCHEDULED);
+                long confirmedCount = appointmentRepository.countByStatus(AppointmentStatus.CONFIRMED);
+                long inProgressCount = appointmentRepository.countByStatus(AppointmentStatus.CONFIRMED); // Assuming CONFIRMED = IN_PROGRESS
+                long completedCount = appointmentRepository.countByStatus(AppointmentStatus.DONE);
+                long cancelledCount = appointmentRepository.countByStatus(AppointmentStatus.CANCELLED);
 
                 data.add(ChartDataPoint.builder()
                                 .label("Đã đặt lịch")
@@ -300,8 +217,7 @@ public class DashboardServiceImpl implements IDashboardService {
                         LocalDateTime dayEnd = date.atTime(23, 59, 59);
 
                         // Count appointments for this specific day
-                        long appointmentsCount = appointmentRepository.findByStartAtBetween(dayStart, dayEnd, null)
-                                        .getTotalElements();
+                        long appointmentsCount = appointmentRepository.countByDate(date);
 
                         data.add(ChartDataPoint.builder()
                                         .label(date.format(formatter))
@@ -319,14 +235,9 @@ public class DashboardServiceImpl implements IDashboardService {
                 List<ChartDataPoint> data = new ArrayList<>();
 
                 try {
-                        // Get all services and count appointments for each service
+                        // Get all services and count appointments for each service using repository methods
                         serviceRepository.findAll().forEach(service -> {
-                                long appointmentCount = appointmentRepository.findAll().stream()
-                                                .filter(apt -> apt.getService() != null
-                                                                && apt.getService().getServiceId()
-                                                                                .equals(service.getServiceId()))
-                                                .count();
-
+                                long appointmentCount = appointmentRepository.countByService_ServiceId(service.getServiceId());
                                 // Only include services that have appointments
                                 if (appointmentCount > 0) {
                                         String category = service.getCategory() != null ? service.getCategory().name()
@@ -427,30 +338,13 @@ public class DashboardServiceImpl implements IDashboardService {
 
                 try {
                         // Query customer counts by tier
-                        long regularCount = customerRepository.findAll().stream()
-                                        .filter(cust -> cust.getTier() != null
-                                                        && "REGULAR".equals(cust.getTier().getCode()))
-                                        .count();
-
-                        long silverCount = customerRepository.findAll().stream()
-                                        .filter(cust -> cust.getTier() != null
-                                                        && "SILVER".equals(cust.getTier().getCode()))
-                                        .count();
-
-                        long goldCount = customerRepository.findAll().stream()
-                                        .filter(cust -> cust.getTier() != null
-                                                        && "GOLD".equals(cust.getTier().getCode()))
-                                        .count();
-
-                        long vipCount = customerRepository.findAll().stream()
-                                        .filter(cust -> cust.getTier() != null
-                                                        && "VIP".equals(cust.getTier().getCode()))
-                                        .count();
+                        long regularCount = customerRepository.countByTierCode("REGULAR");
+                        long silverCount = customerRepository.countByTierCode("SILVER");
+                        long goldCount = customerRepository.countByTierCode("GOLD");
+                        long vipCount = customerRepository.countByTierCode("VIP");
 
                         // Count customers without tier (null tier)
-                        long noTierCount = customerRepository.findAll().stream()
-                                        .filter(cust -> cust.getTier() == null)
-                                        .count();
+                        long noTierCount = customerRepository.countByTierIsNull();
 
                         data.add(ChartDataPoint.builder()
                                         .label("Regular")
@@ -529,10 +423,7 @@ public class DashboardServiceImpl implements IDashboardService {
                         LocalDate date = LocalDate.now().minusDays(i);
 
                         // Calculate revenue for this specific day from invoices
-                        BigDecimal dailyRevenue = invoiceRepository.findAll().stream()
-                                        .filter(inv -> inv.getCreatedAt().toLocalDate().equals(date))
-                                        .map(inv -> inv.getGrandTotal())
-                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        BigDecimal dailyRevenue = invoiceRepository.sumRevenueByDate(date);
 
                         data.add(ChartDataPoint.builder()
                                         .label(date.format(formatter))
@@ -553,30 +444,14 @@ public class DashboardServiceImpl implements IDashboardService {
 
                 try {
                         // Query appointments for current month
-                        long totalAppointments = appointmentRepository.findByStartAtBetween(monthStart, monthEnd, null)
-                                        .getTotalElements();
+                        long totalAppointments = appointmentRepository.countByDateRange(monthStart, monthEnd);
 
                         // Count completed and cancelled appointments
-                        long completedAppointments = appointmentRepository.findAll().stream()
-                                        .filter(apt -> apt.getStartAt().isAfter(monthStart)
-                                                        && apt.getStartAt().isBefore(monthEnd)
-                                                        && apt.getStatus() != null
-                                                        && "COMPLETED".equals(apt.getStatus().name()))
-                                        .count();
-
-                        long cancelledAppointments = appointmentRepository.findAll().stream()
-                                        .filter(apt -> apt.getStartAt().isAfter(monthStart)
-                                                        && apt.getStartAt().isBefore(monthEnd)
-                                                        && apt.getStatus() != null
-                                                        && "CANCELLED".equals(apt.getStatus().name()))
-                                        .count();
+                        long completedAppointments = appointmentRepository.countByDateRangeAndStatus(monthStart, monthEnd, AppointmentStatus.DONE);
+                        long cancelledAppointments = appointmentRepository.countByDateRangeAndStatus(monthStart, monthEnd, AppointmentStatus.CANCELLED);
 
                         // Calculate total revenue for current month
-                        BigDecimal totalRevenue = invoiceRepository.findAll().stream()
-                                        .filter(inv -> inv.getCreatedAt().isAfter(monthStart)
-                                                        && inv.getCreatedAt().isBefore(monthEnd))
-                                        .map(inv -> inv.getGrandTotal())
-                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        BigDecimal totalRevenue = invoiceRepository.sumRevenueByDateRange(monthStart, monthEnd);
 
                         // Calculate average revenue per appointment
                         BigDecimal averageRevenuePerAppointment = totalAppointments > 0
@@ -585,10 +460,7 @@ public class DashboardServiceImpl implements IDashboardService {
                                         : BigDecimal.ZERO;
 
                         // Count new customers for current month
-                        long newCustomers = customerRepository.findAll().stream()
-                                        .filter(cust -> cust.getCreatedAt().toLocalDate()
-                                                        .isAfter(currentMonth.minusDays(1)))
-                                        .count();
+                        long newCustomers = customerRepository.countByCreatedDateBetween(monthStart, monthEnd);
 
                         // Calculate returning customers (customers with multiple appointments)
                         long returningCustomers = customerRepository.findAll().stream()

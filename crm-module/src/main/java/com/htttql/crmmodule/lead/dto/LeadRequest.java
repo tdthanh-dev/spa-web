@@ -19,7 +19,8 @@ public class LeadRequest {
     private String fullName;
 
     @NotBlank(message = "Phone number is required")
-    @Pattern(regexp = "^[0-9]{10,11}$", message = "Phone must be 10-11 digits")
+    @Pattern(regexp = "^(\\+84|84|0)[3|5|7|8|9][0-9]{8}$|^[0-9]{10,11}$",
+             message = "Invalid Vietnamese phone format. Examples: 0987654321, +84987654321, 84987654321")
     private String phone;
 
     private String note;

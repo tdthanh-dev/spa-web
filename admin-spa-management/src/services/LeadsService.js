@@ -1,5 +1,6 @@
 import { BaseService } from './BaseService';
 import { API_ENDPOINTS } from '@/config/constants';
+import { extractApiResponse } from '@/utils/apiUtils';
 
 /**
  * Leads Service - handles consultation requests
@@ -32,7 +33,7 @@ class LeadsService extends BaseService {
     });
 
     const response = await this.apiClient.get(`${this.endpoint}/status/${status}?${queryParams}`);
-    return response.data;
+    return extractApiResponse(response);
   }
 
   /**
@@ -62,7 +63,7 @@ class LeadsService extends BaseService {
     };
 
     const response = await this.apiClient.put(`${this.endpoint}/${id}/status`, requestData);
-    return response.data;
+    return extractApiResponse(response);
   }
 
   /**
@@ -73,7 +74,7 @@ class LeadsService extends BaseService {
    */
   async updateLead(id, leadData) {
     const response = await this.apiClient.put(`${this.endpoint}/${id}`, leadData);
-    return response.data;
+    return extractApiResponse(response);
   }
 
   /**
@@ -83,7 +84,7 @@ class LeadsService extends BaseService {
    */
   async createLead(leadData) {
     const response = await this.apiClient.post(this.endpoint, leadData);
-    return response.data;
+    return extractApiResponse(response);
   }
 
   /**
@@ -92,7 +93,49 @@ class LeadsService extends BaseService {
    */
   async getStats() {
     const response = await this.apiClient.get(`${this.endpoint}/stats`);
-    return response.data;
+    return extractApiResponse(response);
+  }
+
+  /**
+   * Get lead statistics by status
+   * @returns {Promise} API response with status statistics
+   */
+  async getStatusStats() {
+    try {
+      const statuses = ['NEW', 'IN_PROGRESS', 'WON', 'LOST'];
+      const statusPromises = statuses.map(status =>
+        this.apiClient.get(`${this.endpoint}/status/${status}?page=0&size=1`)
+          .then(response => extractApiResponse(response))
+          .then(data => ({
+            status,
+            count: data.totalElements || 0
+          }))
+          .catch(error => ({
+            status,
+            count: 0
+          }))
+      );
+
+      const results = await Promise.all(statusPromises);
+      const stats = {
+        total: results.reduce((sum, item) => sum + item.count, 0),
+        newRequests: results.find(item => item.status === 'NEW')?.count || 0,
+        inProgress: results.find(item => item.status === 'IN_PROGRESS')?.count || 0,
+        won: results.find(item => item.status === 'WON')?.count || 0,
+        lost: results.find(item => item.status === 'LOST')?.count || 0
+      };
+
+      return stats;
+    } catch (error) {
+      console.error('Error fetching status statistics:', error);
+      return {
+        total: 0,
+        newRequests: 0,
+        inProgress: 0,
+        won: 0,
+        lost: 0
+      };
+    }
   }
 
   /**
@@ -103,7 +146,7 @@ class LeadsService extends BaseService {
    */
   async convertToCustomer(leadId, customerData) {
     const response = await this.apiClient.post(`${this.endpoint}/${leadId}/convert`, customerData);
-    return response.data;
+    return extractApiResponse(response);
   }
 
   /**

@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 /**
  * Lead Response DTO - Potential customer information
  * Minimal, anti-spam focused data structure
@@ -29,26 +31,8 @@ public class LeadResponse {
     private Boolean isExistingCustomer;
 
     // Metadata (safe)
-    private java.sql.Date createdDate;
+    private java.time.LocalDateTime createdAt;
 
-    // Display helpers
-    public String getDisplayStatus() {
-        if (status == null)
-            return "Unknown";
-        return switch (status) {
-            case NEW -> "Mới";
-            case IN_PROGRESS -> "Đang xử lý";
-            case WON -> "Đã chuyển đổi";
-            case LOST -> "Mất khách";
-        };
-    }
-
-    public boolean isConverted() {
-        return customerId != null || Boolean.TRUE.equals(isExistingCustomer);
-    }
-
-    public String getLeadSource() {
-        // Could be derived from IP patterns or other metadata
-        return "Website/Public API";
-    }
+    // Note: Business logic methods moved to LeadDisplayService
+    // to keep DTOs clean and focused on data transfer only
 }

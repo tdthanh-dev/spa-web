@@ -16,10 +16,8 @@ class CustomerCaseService extends BaseService {
    * @returns {Promise} API response
    */
   async getByCustomerId(customerId, params = {}) {
-    return this.getAll({
-      ...params,
-      customerId
-    });
+    const endpoint = `${this.endpoint}/customer/${customerId}`;
+    return this.getAll(params, endpoint);
   }
 
   /**

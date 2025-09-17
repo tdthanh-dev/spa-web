@@ -1,6 +1,7 @@
 package com.htttql.crmmodule.service.controller;
 
 import com.htttql.crmmodule.common.dto.ApiResponse;
+import com.htttql.crmmodule.common.dto.PageResponse;
 import com.htttql.crmmodule.service.dto.ServiceRequest;
 import com.htttql.crmmodule.service.dto.ServiceResponse;
 import com.htttql.crmmodule.service.service.IServiceService;
@@ -30,7 +31,7 @@ public class ServiceController {
     @SecurityRequirement(name = "Bearer Authentication")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TECHNICIAN', 'RECEPTIONIST')")
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<ServiceResponse>>> getAllServices(
+    public ResponseEntity<ApiResponse<PageResponse<ServiceResponse>>> getAllServices(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "serviceId") String sortBy,
@@ -46,14 +47,15 @@ public class ServiceController {
         } else {
             services = serviceService.getAllServices(pageable);
         }
-        return ResponseEntity.ok(ApiResponse.success(services, "Services retrieved successfully"));
+        PageResponse<ServiceResponse> response = PageResponse.from(services);
+        return ResponseEntity.ok(ApiResponse.success(response, "Services retrieved successfully"));
     }
 
     @Operation(summary = "Get active services")
     @SecurityRequirement(name = "Bearer Authentication")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TECHNICIAN', 'RECEPTIONIST')")
     @GetMapping("/active")
-    public ResponseEntity<ApiResponse<Page<ServiceResponse>>> getActiveServices(
+    public ResponseEntity<ApiResponse<PageResponse<ServiceResponse>>> getActiveServices(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "serviceId") String sortBy,
@@ -63,7 +65,8 @@ public class ServiceController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<ServiceResponse> services = serviceService.getAllServicesByActiveStatus(pageable, true);
-        return ResponseEntity.ok(ApiResponse.success(services, "Active services retrieved successfully"));
+        PageResponse<ServiceResponse> response = PageResponse.from(services);
+        return ResponseEntity.ok(ApiResponse.success(response, "Active services retrieved successfully"));
     }
 
     @GetMapping("/{id}")

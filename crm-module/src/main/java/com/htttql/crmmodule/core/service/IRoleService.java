@@ -3,7 +3,6 @@ package com.htttql.crmmodule.core.service;
 import com.htttql.crmmodule.core.dto.RoleRequest;
 import com.htttql.crmmodule.core.dto.RoleResponse;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 /**
  * Service interface for Role operations

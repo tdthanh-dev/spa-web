@@ -1,248 +1,165 @@
-import React, { useState, useEffect } from 'react';
-import { tasksAPI, auditAPI } from '@/services/api';
+import React from 'react';
 import { formatDateTimeVN } from '@/utils/dateUtils';
-import { useAuth } from '@/hooks/useAuth';
-import './TaskManagement.css';
+import { useTaskManagement } from '@/hooks/useTaskManagement';
+
 
 const TaskManagement = () => {
-  const { userRole, user } = useAuth();
-  const [tasks, setTasks] = useState([]);
-  const [auditLogs, setAuditLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('tasks');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [selectedTask, setSelectedTask] = useState(null);
-  const [showCreateTask, setShowCreateTask] = useState(false);
-
-  useEffect(() => {
-    loadData();
-  }, [activeTab]);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-
-      if (activeTab === 'tasks') {
-        const tasksResponse = await tasksAPI.getAll(0, 50);
-        setTasks(tasksResponse.data?.content || []);
-      } else {
-        const auditResponse = await auditAPI.getLogs(0, 50);
-        setAuditLogs(auditResponse.data?.content || []);
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleTaskStatusUpdate = async (taskId, newStatus) => {
-    try {
-      const statusData = {
-        status: newStatus,
-        reason: `Updated by ${userRole} at ${new Date().toISOString()}`
-      };
-
-      await tasksAPI.updateStatus(taskId, statusData);
-      setTasks(prev =>
-        prev.map(task =>
-          task.id === taskId ? { ...task, status: newStatus } : task
-        )
-      );
-    } catch (error) {
-      console.error('Error updating task status:', error);
-      alert('Có lỗi khi cập nhật trạng thái task');
-    }
-  };
-
-  const handleCreateTask = async (taskData) => {
-    try {
-      await tasksAPI.create(taskData);
-      setShowCreateTask(false);
-      loadData();
-      alert('Tạo task thành công!');
-    } catch (error) {
-      console.error('Error creating task:', error);
-      alert('Có lỗi khi tạo task');
-    }
-  };
-
-  const getTaskStatusBadge = (status) => {
-    const statusMap = {
-      'TODO': { class: 'todo', label: 'Chưa làm', color: '#6b7280' },
-      'IN_PROGRESS': { class: 'in-progress', label: 'Đang làm', color: '#3b82f6' },
-      'REVIEW': { class: 'review', label: 'Đang review', color: '#f59e0b' },
-      'COMPLETED': { class: 'completed', label: 'Hoàn thành', color: '#10b981' },
-      'CANCELLED': { class: 'cancelled', label: 'Đã hủy', color: '#ef4444' }
-    };
-    return statusMap[status] || statusMap.TODO;
-  };
-
-  const getAuditActionBadge = (action) => {
-    const actionMap = {
-      'CREATE': { class: 'create', label: 'Tạo mới', color: '#10b981' },
-      'UPDATE': { class: 'update', label: 'Cập nhật', color: '#3b82f6' },
-      'DELETE': { class: 'delete', label: 'Xóa', color: '#ef4444' },
-      'LOGIN': { class: 'login', label: 'Đăng nhập', color: '#8b5cf6' },
-      'LOGOUT': { class: 'logout', label: 'Đăng xuất', color: '#6b7280' }
-    };
-    return actionMap[action] || { class: 'unknown', label: action, color: '#6b7280' };
-  };
-
-  const filteredTasks = tasks.filter(task => {
-    const matchesSearch = !searchTerm ||
-      task.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.assignedTo?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesStatus = statusFilter === 'ALL' || task.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const filteredAuditLogs = auditLogs.filter(log => {
-    const matchesSearch = !searchTerm ||
-      log.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.action?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.entityType?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    return matchesSearch;
-  });
+  const {
+    loading,
+    error,
+    activeTab,
+    searchTerm,
+    statusFilter,
+    selectedTask,
+    filteredTasks,
+    filteredAuditLogs,
+    setActiveTab,
+    setSearchTerm,
+    setStatusFilter,
+    setSelectedTask,
+    handleTaskStatusUpdate,
+    getTaskStatusBadge,
+    getAuditActionBadge,
+    handleRetry,
+    canManageTasks,
+    canUpdateTask
+  } = useTaskManagement();
 
   const renderTasksTab = () => (
-    <div className="tasks-section">
-      <div className="section-header">
-        <h3>📋 Quản lý nhiệm vụ</h3>
-        {(userRole === 'ADMIN' || userRole === 'MANAGER') && (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+          <span className="mr-2">📋</span>
+          Quản lý nhiệm vụ
+        </h3>
+        {canManageTasks && (
           <button
-            className="create-btn"
-            onClick={() => setShowCreateTask(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+            onClick={() => alert('Create task modal - TODO: Implement')}
           >
-            ➕ Tạo nhiệm vụ
+            <span className="mr-2">➕</span>
+            Tạo nhiệm vụ
           </button>
         )}
       </div>
 
       {/* Filters */}
-      <div className="filters">
-        <div className="search-group">
-          <input
-            type="text"
-            placeholder="Tìm kiếm theo tiêu đề, mô tả, người thực hiện..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-          />
-        </div>
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Tìm kiếm theo tiêu đề, mô tả, người thực hiện..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
 
-        <div className="filter-group">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="status-filter"
-          >
-            <option value="ALL">Tất cả trạng thái</option>
-            <option value="TODO">Chưa làm</option>
-            <option value="IN_PROGRESS">Đang làm</option>
-            <option value="REVIEW">Đang review</option>
-            <option value="COMPLETED">Hoàn thành</option>
-            <option value="CANCELLED">Đã hủy</option>
-          </select>
+          <div className="sm:w-48">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="TODO">Chưa làm</option>
+              <option value="IN_PROGRESS">Đang làm</option>
+              <option value="REVIEW">Đang review</option>
+              <option value="COMPLETED">Hoàn thành</option>
+              <option value="CANCELLED">Đã hủy</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Tasks Grid */}
-      <div className="tasks-grid">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredTasks.map(task => {
           const statusInfo = getTaskStatusBadge(task.status);
           return (
-            <div key={task.id} className="task-card">
-              <div className="task-header">
-                <div className="task-title">{task.title}</div>
-                <div className="task-status">
-                  <span className={`status-badge ${statusInfo.class}`}>
-                    {statusInfo.label}
-                  </span>
-                </div>
+            <div key={task.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="flex justify-between items-start mb-4">
+                <h4 className="text-lg font-semibold text-gray-900 flex-1 pr-2">{task.title}</h4>
+                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusInfo.bgColor} ${statusInfo.textColor}`}>
+                  {statusInfo.label}
+                </span>
               </div>
 
-              <div className="task-body">
-                <div className="task-description">
+              <div className="space-y-3 mb-4">
+                <p className="text-gray-600 text-sm">
                   {task.description || 'Không có mô tả'}
-                </div>
+                </p>
 
-                <div className="task-meta">
-                  <div className="meta-item">
-                    <span className="label">Người thực hiện:</span>
-                    <span className="value">{task.assignedTo || 'Chưa phân công'}</span>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Người thực hiện:</span>
+                    <span className="text-gray-900">{task.assignedTo || 'Chưa phân công'}</span>
                   </div>
-
-                  <div className="meta-item">
-                    <span className="label">Người tạo:</span>
-                    <span className="value">{task.createdBy || 'N/A'}</span>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Người tạo:</span>
+                    <span className="text-gray-900">{task.createdBy || 'N/A'}</span>
                   </div>
-
-                  <div className="meta-item">
-                    <span className="label">Hạn hoàn thành:</span>
-                    <span className="value">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Hạn hoàn thành:</span>
+                    <span className="text-gray-900">
                       {task.dueDate ? formatDateTimeVN(task.dueDate) : 'Không có hạn'}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="task-footer">
-                <div className="task-dates">
-                  <div className="created-date">
-                    Tạo: {formatDateTimeVN(task.createdAt)}
-                  </div>
+              <div className="flex justify-between items-center text-xs text-gray-500 mb-4">
+                <div>
+                  <div>Tạo: {formatDateTimeVN(task.createdAt)}</div>
                   {task.updatedAt && task.updatedAt !== task.createdAt && (
-                    <div className="updated-date">
-                      Cập nhật: {formatDateTimeVN(task.updatedAt)}
-                    </div>
+                    <div>Cập nhật: {formatDateTimeVN(task.updatedAt)}</div>
                   )}
                 </div>
+              </div>
 
-                <div className="task-actions">
-                  <button
-                    className="view-btn"
-                    onClick={() => setSelectedTask(task)}
-                  >
-                    👁️ Chi tiết
-                  </button>
+              <div className="flex space-x-2">
+                <button
+                  className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center"
+                  onClick={() => setSelectedTask(task)}
+                >
+                  <span className="mr-1">👁️</span>
+                  Chi tiết
+                </button>
 
-                  {(userRole === 'ADMIN' || userRole === 'MANAGER' || task.assignedTo === user?.name) && (
-                    <>
-                      {task.status === 'TODO' && (
-                        <button
-                          className="start-btn"
-                          onClick={() => handleTaskStatusUpdate(task.id, 'IN_PROGRESS')}
-                        >
-                          ▶️ Bắt đầu
-                        </button>
-                      )}
+                {canUpdateTask(task) && (
+                  <>
+                    {task.status === 'TODO' && (
+                      <button
+                        className="flex-1 bg-green-50 hover:bg-green-100 text-green-700 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center"
+                        onClick={() => handleTaskStatusUpdate(task.id, 'IN_PROGRESS')}
+                      >
+                        <span className="mr-1">▶️</span>
+                        Bắt đầu
+                      </button>
+                    )}
 
-                      {task.status === 'IN_PROGRESS' && (
-                        <button
-                          className="review-btn"
-                          onClick={() => handleTaskStatusUpdate(task.id, 'REVIEW')}
-                        >
-                          👁️ Review
-                        </button>
-                      )}
+                    {task.status === 'IN_PROGRESS' && (
+                      <button
+                        className="flex-1 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center"
+                        onClick={() => handleTaskStatusUpdate(task.id, 'REVIEW')}
+                      >
+                        <span className="mr-1">👁️</span>
+                        Review
+                      </button>
+                    )}
 
-                      {task.status === 'REVIEW' && (
-                        <button
-                          className="complete-btn"
-                          onClick={() => handleTaskStatusUpdate(task.id, 'COMPLETED')}
-                        >
-                          ✅ Hoàn thành
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
+                    {task.status === 'REVIEW' && (
+                      <button
+                        className="flex-1 bg-green-50 hover:bg-green-100 text-green-700 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center"
+                        onClick={() => handleTaskStatusUpdate(task.id, 'COMPLETED')}
+                      >
+                        <span className="mr-1">✅</span>
+                        Hoàn thành
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           );
@@ -250,73 +167,81 @@ const TaskManagement = () => {
       </div>
 
       {filteredTasks.length === 0 && (
-        <div className="no-data">
-          <div className="no-data-icon">📋</div>
-          <p>Không tìm thấy nhiệm vụ nào</p>
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">📋</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Không tìm thấy nhiệm vụ nào</h3>
+          <p className="text-gray-500">Thử thay đổi bộ lọc hoặc tìm kiếm khác</p>
         </div>
       )}
     </div>
   );
 
   const renderAuditTab = () => (
-    <div className="audit-section">
-      <div className="section-header">
-        <h3>📊 Nhật ký hoạt động</h3>
-        <div className="audit-actions">
-          <button className="export-btn">📊 Xuất báo cáo</button>
-        </div>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+          <span className="mr-2">📊</span>
+          Nhật ký hoạt động
+        </h3>
+        <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center">
+          <span className="mr-2">📊</span>
+          Xuất báo cáo
+        </button>
       </div>
 
       {/* Search */}
-      <div className="search-section">
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
         <input
           type="text"
           placeholder="Tìm kiếm theo tên người dùng, hành động, đối tượng..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="search-input"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
 
       {/* Audit Logs Table */}
-      <div className="audit-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Thời gian</th>
-              <th>Người dùng</th>
-              <th>Hành động</th>
-              <th>Đối tượng</th>
-              <th>Chi tiết</th>
-              <th>IP</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredAuditLogs.map(log => {
-              const actionInfo = getAuditActionBadge(log.action);
-              return (
-                <tr key={log.id}>
-                  <td>{formatDateTimeVN(log.timestamp)}</td>
-                  <td>{log.userName}</td>
-                  <td>
-                    <span className={`action-badge ${actionInfo.class}`}>
-                      {actionInfo.label}
-                    </span>
-                  </td>
-                  <td>{log.entityType}</td>
-                  <td>{log.details || 'N/A'}</td>
-                  <td>{log.ipAddress || 'N/A'}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời gian</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người dùng</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Đối tượng</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chi tiết</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredAuditLogs.map(log => {
+                const actionInfo = getAuditActionBadge(log.action);
+                return (
+                  <tr key={log.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDateTimeVN(log.timestamp)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{log.userName}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${actionInfo.bgColor} ${actionInfo.textColor}`}>
+                        {actionInfo.label}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{log.entityType}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{log.details || 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{log.ipAddress || 'N/A'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {filteredAuditLogs.length === 0 && (
-        <div className="no-data">
-          <div className="no-data-icon">📊</div>
-          <p>Không tìm thấy nhật ký nào</p>
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">📊</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Không tìm thấy nhật ký nào</h3>
+          <p className="text-gray-500">Thử thay đổi từ khóa tìm kiếm</p>
         </div>
       )}
     </div>
@@ -327,76 +252,74 @@ const TaskManagement = () => {
     if (!selectedTask) return null;
 
     return (
-      <div className="modal-overlay" onClick={() => setSelectedTask(null)}>
-        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-header">
-            <h2>Chi tiết nhiệm vụ #{selectedTask.id}</h2>
+      <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" onClick={() => setSelectedTask(null)}>
+        <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold text-gray-900">Chi tiết nhiệm vụ #{selectedTask.id}</h2>
             <button
-              className="modal-close"
+              className="text-gray-400 hover:text-gray-600 text-2xl"
               onClick={() => setSelectedTask(null)}
             >
               ✕
             </button>
           </div>
 
-          <div className="modal-body">
-            <div className="task-details">
-              <div className="detail-section">
-                <h3>{selectedTask.title}</h3>
-                <div className="status-section">
-                  <span className={`status-badge ${getTaskStatusBadge(selectedTask.status).class}`}>
-                    {getTaskStatusBadge(selectedTask.status).label}
-                  </span>
-                </div>
-              </div>
-
-              <div className="detail-section">
-                <h4>Mô tả</h4>
-                <p>{selectedTask.description || 'Không có mô tả'}</p>
-              </div>
-
-              <div className="detail-grid">
-                <div className="detail-item">
-                  <label>Người thực hiện:</label>
-                  <span>{selectedTask.assignedTo || 'Chưa phân công'}</span>
-                </div>
-
-                <div className="detail-item">
-                  <label>Người tạo:</label>
-                  <span>{selectedTask.createdBy || 'N/A'}</span>
-                </div>
-
-                <div className="detail-item">
-                  <label>Hạn hoàn thành:</label>
-                  <span>{selectedTask.dueDate ? formatDateTimeVN(selectedTask.dueDate) : 'Không có hạn'}</span>
-                </div>
-
-                <div className="detail-item">
-                  <label>Độ ưu tiên:</label>
-                  <span>{selectedTask.priority || 'Normal'}</span>
-                </div>
-              </div>
-
-              {selectedTask.comments && selectedTask.comments.length > 0 && (
-                <div className="detail-section">
-                  <h4>Bình luận</h4>
-                  <div className="comments-list">
-                    {selectedTask.comments.map((comment, index) => (
-                      <div key={index} className="comment">
-                        <div className="comment-author">{comment.author}</div>
-                        <div className="comment-content">{comment.content}</div>
-                        <div className="comment-date">{formatDateTimeVN(comment.createdAt)}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+          <div className="space-y-6">
+            <div className="flex justify-between items-start">
+              <h3 className="text-lg font-semibold text-gray-900">{selectedTask.title}</h3>
+              <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getTaskStatusBadge(selectedTask.status).bgColor} ${getTaskStatusBadge(selectedTask.status).textColor}`}>
+                {getTaskStatusBadge(selectedTask.status).label}
+              </span>
             </div>
+
+            <div>
+              <h4 className="text-md font-medium text-gray-900 mb-2">Mô tả</h4>
+              <p className="text-gray-600">{selectedTask.description || 'Không có mô tả'}</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Người thực hiện:</label>
+                <span className="text-gray-900">{selectedTask.assignedTo || 'Chưa phân công'}</span>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Người tạo:</label>
+                <span className="text-gray-900">{selectedTask.createdBy || 'N/A'}</span>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Hạn hoàn thành:</label>
+                <span className="text-gray-900">{selectedTask.dueDate ? formatDateTimeVN(selectedTask.dueDate) : 'Không có hạn'}</span>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Độ ưu tiên:</label>
+                <span className="text-gray-900">{selectedTask.priority || 'Normal'}</span>
+              </div>
+            </div>
+
+            {selectedTask.comments && selectedTask.comments.length > 0 && (
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mb-3">Bình luận</h4>
+                <div className="space-y-3">
+                  {selectedTask.comments.map((comment, index) => (
+                    <div key={index} className="bg-gray-50 rounded-lg p-3">
+                      <div className="flex justify-between items-start">
+                        <div className="font-medium text-gray-900">{comment.author}</div>
+                        <div className="text-sm text-gray-500">{formatDateTimeVN(comment.createdAt)}</div>
+                      </div>
+                      <div className="text-gray-600 mt-1">{comment.content}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="modal-footer">
+          <div className="flex justify-end mt-6">
             <button
-              className="btn-secondary"
+              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
               onClick={() => setSelectedTask(null)}
             >
               Đóng
@@ -409,46 +332,81 @@ const TaskManagement = () => {
 
   if (loading) {
     return (
-      <div className="task-management">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Đang tải dữ liệu nhiệm vụ...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải dữ liệu nhiệm vụ...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="task-management">
-      <div className="header">
-        <h1>📋 Quản lý nhiệm vụ & Nhật ký</h1>
-        <p>Quản lý nhiệm vụ và theo dõi hoạt động hệ thống</p>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+            <span className="mr-3">📋</span>
+            Quản lý nhiệm vụ & Nhật ký
+          </h1>
+          <p className="mt-2 text-gray-600">Quản lý nhiệm vụ và theo dõi hoạt động hệ thống</p>
+        </div>
 
-      {/* Tab Navigation */}
-      <div className="tabs">
-        <button
-          className={`tab-btn ${activeTab === 'tasks' ? 'active' : ''}`}
-          onClick={() => setActiveTab('tasks')}
-        >
-          📋 Nhiệm vụ
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'audit' ? 'active' : ''}`}
-          onClick={() => setActiveTab('audit')}
-        >
-          📊 Nhật ký
-        </button>
-      </div>
+        {/* Tab Navigation */}
+        <div className="mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'tasks'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+                onClick={() => setActiveTab('tasks')}
+              >
+                📋 Nhiệm vụ
+              </button>
+              <button
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'audit'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+                onClick={() => setActiveTab('audit')}
+              >
+                📊 Nhật ký
+              </button>
+            </nav>
+          </div>
+        </div>
 
-      {/* Tab Content */}
-      <div className="tab-content">
-        {activeTab === 'tasks' && renderTasksTab()}
-        {activeTab === 'audit' && renderAuditTab()}
-      </div>
+        {/* Tab Content */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          {activeTab === 'tasks' && renderTasksTab()}
+          {activeTab === 'audit' && renderAuditTab()}
+        </div>
 
-      {/* Modals */}
-      {renderTaskDetailsModal()}
+        {/* Error Banner */}
+        {error && (
+          <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <span className="text-red-600 mr-2">⚠️</span>
+                <span className="text-red-800 font-medium">{error}</span>
+              </div>
+              <button
+                onClick={handleRetry}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+              >
+                Thử lại
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Modals */}
+        {renderTaskDetailsModal()}
+      </div>
     </div>
   );
 };

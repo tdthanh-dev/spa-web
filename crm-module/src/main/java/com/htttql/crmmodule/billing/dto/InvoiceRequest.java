@@ -2,7 +2,6 @@ package com.htttql.crmmodule.billing.dto;
 
 import com.htttql.crmmodule.common.enums.InvoiceStatus;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,11 +16,13 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class InvoiceRequest {
 
-    @NotNull(message = "Customer ID is required")
     private Long customerId;
 
-    @NotNull(message = "Total amount is required")
-    @Positive(message = "Total amount must be positive")
+    @NotNull(message = "Case ID is required")
+    private Long caseId;
+
+    private Long userId;
+
     private BigDecimal totalAmount;
 
     private InvoiceStatus status;

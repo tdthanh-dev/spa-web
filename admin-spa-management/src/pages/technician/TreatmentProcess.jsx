@@ -1,157 +1,99 @@
-import React, { useState, useEffect } from 'react';
-import { appointmentsAPI, spaCustomersAPI } from '@/services/api';
-import { useAuth } from '@/hooks/useAuth';
+import React from 'react';
 import { formatDateTimeVN } from '@/utils/dateUtils';
-import './TreatmentProcess.css';
+import { useTreatmentProcess } from '@/hooks/useTreatmentProcess';
 
+/**
+ * Treatment Process Component
+ * UI component for technician treatment management - logic separated to custom hook
+ * Styled with Tailwind CSS for modern, responsive design
+ */
 const TreatmentProcess = () => {
-  const { user } = useAuth();
-  const [currentTreatment, setCurrentTreatment] = useState(null);
-  const [upcomingTreatments, setUpcomingTreatments] = useState([]);
-  const [completedTreatments, setCompletedTreatments] = useState([]);
-  const [selectedTreatment, setSelectedTreatment] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [treatmentNotes, setTreatmentNotes] = useState('');
-
-  useEffect(() => {
-    if (user?.id) {
-      loadTreatmentData();
-    }
-  }, [user?.id]);
-
-  const loadTreatmentData = async () => {
-    try {
-      setLoading(true);
-
-      // Get all appointments for this technician
-      const response = await appointmentsAPI.getAll(0, 50);
-      const allAppointments = response.data?.success ? response.data.data.content || [] : [];
-
-      // Filter appointments for this technician
-      const technicianAppointments = allAppointments.filter(apt => apt.technicianId === user.id);
-
-      // Separate by status
-      const current = technicianAppointments.find(apt => apt.status === 'IN_PROGRESS');
-      const upcoming = technicianAppointments.filter(apt =>
-        ['SCHEDULED', 'CONFIRMED', 'CHECKED_IN'].includes(apt.status)
-      );
-      const completed = technicianAppointments.filter(apt => apt.status === 'COMPLETED');
-
-      setCurrentTreatment(current || null);
-      setUpcomingTreatments(upcoming.slice(0, 10)); // Show next 10
-      setCompletedTreatments(completed.slice(0, 20)); // Show last 20
-
-    } catch (error) {
-      console.error('Error loading treatment data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleStartTreatment = async (appointmentId) => {
-    try {
-      await appointmentsAPI.updateStatus(appointmentId, 'IN_PROGRESS');
-      await loadTreatmentData();
-    } catch (error) {
-      console.error('Error starting treatment:', error);
-      alert('Có lỗi khi bắt đầu điều trị');
-    }
-  };
-
-  const handleCompleteTreatment = async (appointmentId, notes) => {
-    try {
-      // First update appointment status
-      await appointmentsAPI.updateStatus(appointmentId, 'COMPLETED');
-
-      // TODO: Save treatment notes to technician notes API
-      if (notes) {
-        // This would save to technician notes service
-        console.log('Saving treatment notes:', notes);
-      }
-
-      setSelectedTreatment(null);
-      setTreatmentNotes('');
-      await loadTreatmentData();
-
-      alert('Điều trị hoàn thành thành công!');
-    } catch (error) {
-      console.error('Error completing treatment:', error);
-      alert('Có lỗi khi hoàn thành điều trị');
-    }
-  };
-
-  const handleCancelTreatment = async (appointmentId, reason) => {
-    try {
-      await appointmentsAPI.updateStatus(appointmentId, 'CANCELLED');
-      await loadTreatmentData();
-    } catch (error) {
-      console.error('Error cancelling treatment:', error);
-      alert('Có lỗi khi hủy điều trị');
-    }
-  };
-
-  const getStatusBadge = (status) => {
-    const statusMap = {
-      'SCHEDULED': { class: 'scheduled', label: 'Đã lên lịch', color: '#fbbf24' },
-      'CONFIRMED': { class: 'confirmed', label: 'Đã xác nhận', color: '#3b82f6' },
-      'CHECKED_IN': { class: 'checked-in', label: 'Đã check-in', color: '#10b981' },
-      'IN_PROGRESS': { class: 'in-progress', label: 'Đang điều trị', color: '#8b5cf6' },
-      'COMPLETED': { class: 'completed', label: 'Hoàn thành', color: '#10b981' },
-      'CANCELLED': { class: 'cancelled', label: 'Đã hủy', color: '#ef4444' }
-    };
-    return statusMap[status] || statusMap.SCHEDULED;
-  };
+  // Use custom hook for all business logic
+  const {
+    currentTreatment,
+    upcomingTreatments,
+    completedTreatments,
+    selectedTreatment,
+    loading,
+    treatmentNotes,
+    checklistItems,
+    handleStartTreatment,
+    handleCompleteTreatment,
+    handleCancelTreatment,
+    setSelectedTreatment,
+    setTreatmentNotes,
+    updateChecklistItem,
+    getStatusBadge,
+    stats,
+    hasCurrentTreatment,
+    hasUpcomingTreatments,
+    hasCompletedTreatments,
+    isChecklistComplete
+  } = useTreatmentProcess();
 
   if (loading) {
     return (
-      <div className="treatment-process">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Đang tải dữ liệu điều trị...</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Đang tải dữ liệu điều trị...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="treatment-process">
-      <div className="header">
-        <h1>🩺 Quá trình điều trị</h1>
-        <p>Quản lý các buổi điều trị và ghi chú kỹ thuật</p>
+    <div className="min-h-screen bg-gray-50 p-6">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">🩺 Quá trình điều trị</h1>
+        <p className="text-gray-600">Quản lý các buổi điều trị và ghi chú kỹ thuật</p>
       </div>
 
       {/* Current Treatment */}
-      {currentTreatment && (
-        <div className="current-treatment-section">
-          <h2>🔄 Đang điều trị</h2>
-          <div className="current-treatment-card">
-            <div className="treatment-header">
-              <div className="patient-info">
-                <h3>{currentTreatment.customerName}</h3>
-                <p>{currentTreatment.serviceName}</p>
-                <p className="treatment-time">
+      {hasCurrentTreatment && (
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <span className="mr-2">🔄</span>
+            Đang điều trị
+          </h2>
+
+          <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">{currentTreatment.customerName}</h3>
+                <p className="text-gray-600">{currentTreatment.serviceName}</p>
+                <p className="text-sm text-gray-500 mt-1">
                   Bắt đầu: {formatDateTimeVN(currentTreatment.startAt)}
                 </p>
               </div>
-              <div className="treatment-status">
-                <span className={`status-badge ${getStatusBadge(currentTreatment.status).class}`}>
-                  {getStatusBadge(currentTreatment.status).label}
-                </span>
+              <div className="text-right">
+                {(() => {
+                  const statusInfo = getStatusBadge(currentTreatment.status);
+                  return (
+                      <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium`}
+                           style={{ backgroundColor: statusInfo.color + '20', color: statusInfo.color }}>
+                        {statusInfo.label}
+                      </span>
+                  );
+                })()}
               </div>
             </div>
 
-            <div className="treatment-actions">
+            <div className="flex space-x-3">
               <button
-                className="action-btn complete"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center"
                 onClick={() => setSelectedTreatment(currentTreatment)}
               >
-                ✅ Hoàn thành điều trị
+                <span className="mr-2">✅</span>
+                Hoàn thành điều trị
               </button>
               <button
-                className="action-btn pause"
+                className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center"
                 onClick={() => handleCancelTreatment(currentTreatment.id, 'Paused by technician')}
               >
-                ⏸️ Tạm dừng
+                <span className="mr-2">⏸️</span>
+                Tạm dừng
               </button>
             </div>
           </div>
@@ -160,120 +102,178 @@ const TreatmentProcess = () => {
 
       {/* Treatment Completion Modal */}
       {selectedTreatment && (
-        <div className="modal-overlay" onClick={() => setSelectedTreatment(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Hoàn thành điều trị</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Hoàn thành điều trị</h2>
               <button
-                className="modal-close"
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
                 onClick={() => setSelectedTreatment(null)}
               >
                 ✕
               </button>
             </div>
 
-            <div className="modal-body">
-              <div className="treatment-summary">
-                <h3>{selectedTreatment.customerName}</h3>
-                <p><strong>Dịch vụ:</strong> {selectedTreatment.serviceName}</p>
-                <p><strong>Thời gian:</strong> {formatDateTimeVN(selectedTreatment.startAt)}</p>
+            <div className="p-6">
+              {/* Treatment Summary */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <h3 className="font-medium text-gray-900 mb-2">{selectedTreatment.customerName}</h3>
+                <div className="space-y-1 text-sm text-gray-600">
+                  <p><span className="font-medium">Dịch vụ:</span> {selectedTreatment.serviceName}</p>
+                  <p><span className="font-medium">Thời gian:</span> {formatDateTimeVN(selectedTreatment.startAt)}</p>
+                </div>
               </div>
 
-              <div className="treatment-notes">
-                <label htmlFor="treatment-notes">Ghi chú điều trị:</label>
+              {/* Treatment Notes */}
+              <div className="mb-6">
+                <label htmlFor="treatment-notes" className="block text-sm font-medium text-gray-700 mb-2">
+                  Ghi chú điều trị:
+                </label>
                 <textarea
                   id="treatment-notes"
                   value={treatmentNotes}
                   onChange={(e) => setTreatmentNotes(e.target.value)}
                   placeholder="Ghi chú về quá trình điều trị, kỹ thuật sử dụng, sản phẩm đã dùng..."
-                  rows={6}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 />
               </div>
 
-              <div className="treatment-checklist">
-                <h4>Danh sách kiểm tra:</h4>
-                <div className="checklist-items">
-                  <label className="checklist-item">
-                    <input type="checkbox" /> Tư vấn trước điều trị
+              {/* Treatment Checklist */}
+              <div className="mb-6">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Danh sách kiểm tra:</h4>
+                <div className="space-y-3">
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checklistItems.consultation}
+                      onChange={(e) => updateChecklistItem('consultation', e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">Tư vấn trước điều trị</span>
                   </label>
-                  <label className="checklist-item">
-                    <input type="checkbox" /> Kiểm tra da và chống chỉ định
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checklistItems.skinCheck}
+                      onChange={(e) => updateChecklistItem('skinCheck', e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">Kiểm tra da và chống chỉ định</span>
                   </label>
-                  <label className="checklist-item">
-                    <input type="checkbox" /> Vệ sinh và chuẩn bị dụng cụ
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checklistItems.sterilization}
+                      onChange={(e) => updateChecklistItem('sterilization', e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">Vệ sinh và chuẩn bị dụng cụ</span>
                   </label>
-                  <label className="checklist-item">
-                    <input type="checkbox" /> Thực hiện kỹ thuật đúng quy trình
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checklistItems.technique}
+                      onChange={(e) => updateChecklistItem('technique', e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">Thực hiện kỹ thuật đúng quy trình</span>
                   </label>
-                  <label className="checklist-item">
-                    <input type="checkbox" /> Hướng dẫn chăm sóc sau điều trị
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checklistItems.aftercare}
+                      onChange={(e) => updateChecklistItem('aftercare', e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">Hướng dẫn chăm sóc sau điều trị</span>
                   </label>
-                  <label className="checklist-item">
-                    <input type="checkbox" /> Lên lịch retouch (nếu cần)
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checklistItems.retouch}
+                      onChange={(e) => updateChecklistItem('retouch', e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">Lên lịch retouch (nếu cần)</span>
                   </label>
                 </div>
+
+                {!isChecklistComplete() && (
+                  <p className="text-sm text-amber-600 mt-3 flex items-center">
+                    <span className="mr-1">⚠️</span>
+                    Vui lòng hoàn thành tất cả các bước kiểm tra
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-lg">
               <button
-                className="btn-secondary"
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
                 onClick={() => setSelectedTreatment(null)}
               >
                 Hủy
               </button>
               <button
-                className="btn-primary"
-                onClick={() => handleCompleteTreatment(selectedTreatment.id, treatmentNotes)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center ${
+                  isChecklistComplete()
+                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+                onClick={() => isChecklistComplete() && handleCompleteTreatment(selectedTreatment.id, treatmentNotes)}
+                disabled={!isChecklistComplete()}
               >
-                ✅ Hoàn thành
+                <span className="mr-2">✅</span>
+                Hoàn thành
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <div className="treatment-content">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Upcoming Treatments */}
-        <div className="upcoming-treatments">
-          <h2>📅 Lịch điều trị sắp tới ({upcomingTreatments.length})</h2>
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <span className="mr-2">📅</span>
+            Lịch điều trị sắp tới ({upcomingTreatments.length})
+          </h2>
 
-          <div className="treatments-list">
-            {upcomingTreatments.length === 0 ? (
-              <div className="no-treatments">
-                <div className="no-data-icon">📅</div>
-                <p>Không có lịch điều trị nào sắp tới</p>
+          <div className="space-y-3">
+            {!hasUpcomingTreatments ? (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-2">📅</div>
+                <p className="text-gray-500">Không có lịch điều trị nào sắp tới</p>
               </div>
             ) : (
               upcomingTreatments.map(treatment => {
                 const statusInfo = getStatusBadge(treatment.status);
                 return (
-                  <div key={treatment.id} className="treatment-card upcoming">
-                    <div className="treatment-time">
-                      {formatDateTimeVN(treatment.startAt)}
-                    </div>
-
-                    <div className="treatment-info">
-                      <div className="patient-name">{treatment.customerName}</div>
-                      <div className="service-name">{treatment.serviceName}</div>
-                      <div className="treatment-duration">⏱️ 60 phút</div>
-                    </div>
-
-                    <div className="treatment-status">
-                      <span className={`status-badge ${statusInfo.class}`}>
-                        {statusInfo.label}
-                      </span>
-                    </div>
-
-                    <div className="treatment-actions">
-                      {treatment.status === 'CHECKED_IN' && (
-                        <button
-                          className="action-btn start"
-                          onClick={() => handleStartTreatment(treatment.id)}
-                        >
-                          ▶️ Bắt đầu
-                        </button>
-                      )}
+                  <div key={treatment.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <div className="text-sm text-gray-500 mb-1">
+                          {formatDateTimeVN(treatment.startAt)}
+                        </div>
+                        <div className="font-medium text-gray-900">{treatment.customerName}</div>
+                        <div className="text-sm text-gray-600">{treatment.serviceName}</div>
+                        <div className="text-xs text-gray-500 mt-1">⏱️ 60 phút</div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium mb-2`}
+                              style={{ backgroundColor: statusInfo.color + '20', color: statusInfo.color }}>
+                          {statusInfo.label}
+                        </span>
+                        {treatment.status === 'CHECKED_IN' && (
+                          <button
+                            className="block w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors duration-200"
+                            onClick={() => handleStartTreatment(treatment.id)}
+                          >
+                            ▶️ Bắt đầu
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -283,38 +283,41 @@ const TreatmentProcess = () => {
         </div>
 
         {/* Completed Treatments */}
-        <div className="completed-treatments">
-          <h2>✅ Lịch sử điều trị ({completedTreatments.length})</h2>
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <span className="mr-2">✅</span>
+            Lịch sử điều trị ({completedTreatments.length})
+          </h2>
 
-          <div className="treatments-list">
-            {completedTreatments.length === 0 ? (
-              <div className="no-treatments">
-                <div className="no-data-icon">✅</div>
-                <p>Chưa có lịch điều trị nào hoàn thành</p>
+          <div className="space-y-3">
+            {!hasCompletedTreatments ? (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-2">✅</div>
+                <p className="text-gray-500">Chưa có lịch điều trị nào hoàn thành</p>
               </div>
             ) : (
               completedTreatments.map(treatment => {
                 const statusInfo = getStatusBadge(treatment.status);
                 return (
-                  <div key={treatment.id} className="treatment-card completed">
-                    <div className="treatment-time">
-                      {formatDateTimeVN(treatment.startAt)}
-                    </div>
-
-                    <div className="treatment-info">
-                      <div className="patient-name">{treatment.customerName}</div>
-                      <div className="service-name">{treatment.serviceName}</div>
-                      <div className="completion-note">Hoàn thành thành công</div>
-                    </div>
-
-                    <div className="treatment-status">
-                      <span className={`status-badge ${statusInfo.class}`}>
-                        {statusInfo.label}
-                      </span>
-                    </div>
-
-                    <div className="treatment-actions">
-                      <button className="action-btn view">👁️ Chi tiết</button>
+                  <div key={treatment.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <div className="text-sm text-gray-500 mb-1">
+                          {formatDateTimeVN(treatment.startAt)}
+                        </div>
+                        <div className="font-medium text-gray-900">{treatment.customerName}</div>
+                        <div className="text-sm text-gray-600">{treatment.serviceName}</div>
+                        <div className="text-xs text-green-600 mt-1">Hoàn thành thành công</div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium mb-2`}
+                              style={{ backgroundColor: statusInfo.color + '20', color: statusInfo.color }}>
+                          {statusInfo.label}
+                        </span>
+                        <button className="block w-full bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors duration-200">
+                          👁️ Chi tiết
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -325,23 +328,24 @@ const TreatmentProcess = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="treatment-stats">
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-number">{upcomingTreatments.length}</div>
-            <div className="stat-label">Lịch sắp tới</div>
+      <div className="mt-8 bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">📊 Thống kê nhanh</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center p-4 bg-blue-50 rounded-lg">
+            <div className="text-2xl font-bold text-blue-600">{stats.upcoming}</div>
+            <div className="text-sm text-gray-600">Lịch sắp tới</div>
           </div>
-          <div className="stat-card">
-            <div className="stat-number">{currentTreatment ? 1 : 0}</div>
-            <div className="stat-label">Đang điều trị</div>
+          <div className="text-center p-4 bg-purple-50 rounded-lg">
+            <div className="text-2xl font-bold text-purple-600">{stats.current}</div>
+            <div className="text-sm text-gray-600">Đang điều trị</div>
           </div>
-          <div className="stat-card">
-            <div className="stat-number">{completedTreatments.length}</div>
-            <div className="stat-label">Hoàn thành</div>
+          <div className="text-center p-4 bg-green-50 rounded-lg">
+            <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
+            <div className="text-sm text-gray-600">Hoàn thành</div>
           </div>
-          <div className="stat-card">
-            <div className="stat-number">4.8</div>
-            <div className="stat-label">Đánh giá TB</div>
+          <div className="text-center p-4 bg-yellow-50 rounded-lg">
+            <div className="text-2xl font-bold text-yellow-600">{stats.rating}</div>
+            <div className="text-sm text-gray-600">Đánh giá TB</div>
           </div>
         </div>
       </div>

@@ -1,220 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { leadsService } from '@/services';
-import { getRelativeTime, formatDateTimeVN } from '@/utils/dateUtils';
-import { getStatusInfo, getCustomerType, getCustomerTypeStatus, truncateText } from '@/utils/formatters';
-import { APP_CONFIG } from '@/config/constants';
-import { Pagination, SortableHeader, useSort } from '@/components/common/CommonComponents';
+// ========= ConsultationDashboard.jsx (Tailwind) =========
+import React from 'react';
+import { formatDateTimeVN } from '@/utils/dateUtils';
+// removed: import { truncateText } from '@/utils/formatters';
+import { Pagination, SortableHeader } from '@/components/common/CommonComponents';
+import { useConsultationDashboard } from '@/hooks/useConsultationDashboard.jsx';
 import RequestDetailModalV2 from '@/components/RequestDetailModal/RequestDetailModalV2';
-import './ConsultationDashboard.css';
 
 const ConsultationDashboard = () => {
-  
-  const [data, setData] = useState({
-    requests: [],
-    totalElements: 0,
-    totalPages: 0,
-    currentPage: 0,
-    pageSize: 20,
-    loading: true,
-    error: null
-  });
+  const {
+    data,
+    statistics,
+    hasRequests,
+    showPagination,
+    sort,
+    pagination,
+    statusFilter,
+    modalState,
+    handleSort,
+    handlePageChange,
+    handlePageSizeChange,
+    handleViewRequest,
+    handleCloseModal,
+    handleCreateCustomer,
+    handleCreateAppointment,
+    handleStartConsultation,
+    handleViewCustomerProfile,
+    handleStatusFilter,
+    handleClearFilter,
+    fetchData,
+    StatusBadge,
+  } = useConsultationDashboard();
 
-  // Sorting state
-  const { sort, handleSort } = useSort({ sortBy: 'leadId', sortDir: 'desc' });
-
-  // Pagination state
-  const [pagination, setPagination] = useState({
-    page: 0,
-    size: 20
-  });
-
-  // Thống kê
-  const [statistics, setStatistics] = useState({
-    total: 0,
-    new: 0,
-    inProgress: 0,
-    won: 0,
-    lost: 0
-  });
-
-  // Filter state
-  const [statusFilter, setStatusFilter] = useState(null);
-
-  // Modal state
-  const [modalState, setModalState] = useState({
-    isOpen: false,
-    selectedRequest: null
-  });
-
-  // Single useEffect to handle all data fetching
-  useEffect(() => {
-    fetchData();
-  }, [statusFilter, sort, pagination]);
-
-  // Handle pagination change
-  const handlePageChange = (newPage) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
-  };
-
-  const handlePageSizeChange = (newSize) => {
-    setPagination({ page: 0, size: newSize });
-  };
-
-  // Modal handlers
-  const handleViewRequest = (request) => {
-    setModalState({
-      isOpen: true,
-      selectedRequest: request
-    });
-  };
-
-  const handleCloseModal = () => {
-    setModalState({
-      isOpen: false,
-      selectedRequest: null
-    });
-  };
-
-  const handleCreateCustomer = (customerData) => {
-    // TODO: Implement customer creation API call
-    // After successful creation, refresh the data
-    fetchData();
-  };
-
-  const handleCreateAppointment = (request, customerData) => {
-    // Navigate to appointments management page with pre-filled data
-    window.location.href = '/receptionist/appointments?leadId=' + request.leadId;
-  };
-
-  const handleStartConsultation = async (request) => {
-    try {
-      // Update status to IN_PROGRESS
-      await leadsService.updateLeadStatus(request.leadId, 'IN_PROGRESS', 'Bắt đầu tư vấn khách hàng');
-
-      // Create updated request object with new status
-      const updatedRequest = { ...request, status: 'IN_PROGRESS' };
-
-      // Open modal with updated request
-      handleViewRequest(updatedRequest);
-
-    } catch (error) {
-      // Could show error toast/message here
-    }
-  };
-
-  const handleViewCustomerProfile = (customerId) => {
-    // Navigate to customer profile page based on current user role
-    const currentPath = window.location.pathname;
-    let profilePath = `/customers/${customerId}`;
-
-    if (currentPath.includes('/admin/')) {
-      profilePath = `/admin${profilePath}`;
-    } else if (currentPath.includes('/technician/')) {
-      profilePath = `/technician${profilePath}`;
-    } else {
-      profilePath = `/receptionist${profilePath}`;
-    }
-
-    window.open(profilePath, '_blank');
-  };
-
-  // Status filter handlers
-  const handleStatusFilter = (status) => {
-    setStatusFilter(status);
-    // Reset pagination when filter changes
-    setPagination(prev => ({ ...prev, page: 0 }));
-  };
-
-  const handleClearFilter = () => {
-    setStatusFilter(null);
-    // Reset pagination when clearing filter
-    setPagination(prev => ({ ...prev, page: 0 }));
-  };
-
-  const fetchData = async () => {
-    try {
-      setData(prev => ({ ...prev, loading: true, error: null }));
-
-      let response;
-      
-      // Use dedicated status API if filtering by status
-      if (statusFilter && statusFilter !== null) {
-        response = await leadsService.getByStatus(statusFilter, {
-          page: pagination.page,
-          size: pagination.size,
-          sortBy: sort.sortBy || 'leadId',
-          sortDir: sort.sortDir || 'desc'
-        });
-      } else {
-        response = await leadsService.getAll({
-          page: pagination.page,
-          size: pagination.size,
-          sortBy: sort.sortBy || 'leadId',
-          sortDir: sort.sortDir || 'desc'
-        });
-      }
-
-      // New API structure: response contains content directly
-      const requests = response?.content || [];
-
-      // Simplified statistics calculation
-      const stats = {
-        total: response?.totalElements || 0,
-        new: requests.filter(req => req.status === 'NEW').length,
-        inProgress: requests.filter(req => req.status === 'IN_PROGRESS').length,
-        won: requests.filter(req => req.status === 'WON').length,
-        lost: requests.filter(req => req.status === 'LOST').length
-      };
-
-      setData({
-        requests,
-        totalElements: response?.totalElements || 0,
-        totalPages: response?.totalPages || 0,
-        currentPage: response?.number || 0,
-        pageSize: response?.size || pagination.size,
-        loading: false,
-        error: null
-      });
-
-      setStatistics(stats);
-    } catch (error) {
-      let errorMessage = 'Không thể tải dữ liệu. Vui lòng thử lại sau.';
-
-      if (error.response?.status === 401) {
-        // Don't set error message here, let the interceptor handle logout
-        return;
-      } else if (error.response?.status === 403) {
-        errorMessage = 'Bạn không có quyền truy cập dữ liệu này.';
-      } else if (error.response?.status === 500) {
-        errorMessage = 'Lỗi server. Vui lòng liên hệ quản trị viên.';
-      } else if (error.code === 'NETWORK_ERROR' || !error.response) {
-        errorMessage = 'Không thể kết nối tới server. Kiểm tra kết nối mạng.';
-      }
-
-      setData(prev => ({
-        ...prev,
-        loading: false,
-        error: errorMessage
-      }));
-    }
-  };
-
-  const StatusBadge = ({ status }) => {
-    const statusInfo = getStatusInfo(status);
-    return (
-      <span className={`status-badge ${statusInfo.className}`}>
-        {statusInfo.label}
-      </span>
-    );
-  };
-
-  // Test render - always show something
   if (data.loading) {
     return (
-      <div className="consultation-dashboard">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Đang tải dữ liệu...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3" />
+          <p className="text-gray-600">Đang tải dữ liệu...</p>
         </div>
       </div>
     );
@@ -222,277 +44,266 @@ const ConsultationDashboard = () => {
 
   if (data.error) {
     return (
-      <div className="consultation-dashboard">
-        <div className="error-container">
-          <h2><span className="icon icon-warning"></span> Có lỗi xảy ra</h2>
-          <p>{data.error}</p>
-          <button className="retry-button" onClick={fetchData}>
-            Thử lại
-          </button>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="max-w-md mx-auto">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <div className="text-red-600 mb-4 text-2xl">⚠️</div>
+            <h2 className="text-lg font-semibold text-red-800 mb-2">Có lỗi xảy ra</h2>
+            <p className="text-red-700 mb-4">{data.error}</p>
+            <button
+              onClick={fetchData}
+              className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              Thử lại
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-
   return (
-    <div className="consultation-dashboard">
-      {/* Header */}
-      <div className="dashboard-header">
-        <h1>Yêu cầu tư vấn</h1>
-        {statusFilter && (
-          <div className="active-filter">
-            <span className="filter-text">
-              {
-                statusFilter === 'NEW' ? 'Mới' :
-                statusFilter === 'IN_PROGRESS' ? 'Đang tư vấn' :
-                statusFilter === 'WON' ? 'Thành công' :
-                statusFilter === 'LOST' ? 'Thất bại' :
-                statusFilter
-              }
-            </span>
-            <button className="clear-filter-button" onClick={handleClearFilter}>
-              <span className="icon icon-close"></span>
-            </button>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+          <div className="flex items-center mb-4 sm:mb-0">
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+              <span className="mr-3">💬</span>
+              Yêu cầu tư vấn
+            </h1>
+            {statusFilter && (
+              <span className="ml-4 inline-flex items-center gap-2 rounded-full bg-blue-100 text-blue-800 px-3 py-1 text-sm">
+                {statusFilter === 'NEW' ? 'Mới' : statusFilter === 'IN_PROGRESS' ? 'Đang tư vấn' : statusFilter === 'WON' ? 'Thành công' : statusFilter === 'LOST' ? 'Thất bại' : statusFilter}
+                <button
+                  onClick={handleClearFilter}
+                  className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full hover:bg-blue-200 transition-colors"
+                  title="Xoá bộ lọc"
+                >
+                  ✕
+                </button>
+              </span>
+            )}
           </div>
-        )}
-        <button className="refresh-button" onClick={fetchData}>
-          <span className="icon icon-refresh"></span>
-        </button>
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="statistics-grid">
-        <div
-          className={`stat-card total ${statusFilter === null ? 'active' : ''}`}
-          onClick={() => handleClearFilter()}
-          style={{ cursor: 'pointer' }}
-          title="Xem tất cả yêu cầu"
-        >
-          <div className="stat-icon">
-            <span className="icon icon-dashboard"></span>
-          </div>
-          <div className="stat-content">
-            <h3>Tổng</h3>
-          </div>
+          <button
+            onClick={fetchData}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-800 hover:bg-gray-50 transition-colors"
+            title="Làm mới"
+          >
+            <span className="text-base">🔄</span> Làm mới
+          </button>
         </div>
 
-        <div
-          className={`stat-card new ${statusFilter === 'NEW' ? 'active' : ''}`}
-          onClick={() => handleStatusFilter('NEW')}
-          style={{ cursor: 'pointer' }}
-          title="Xem yêu cầu mới"
-        >
-          <div className="stat-icon">
-            <span className="icon icon-plus"></span>
+        {/* Statistics */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+          <div
+            onClick={handleClearFilter}
+            className={`cursor-pointer rounded-xl border p-4 shadow-sm transition-all bg-white hover:shadow-md ${statusFilter === null ? 'ring-2 ring-blue-300 bg-blue-50' : ''}`}
+            title="Xem tất cả yêu cầu"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 grid place-items-center text-lg">📊</div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-800">Tổng</h3>
+                <p className="text-lg font-semibold text-gray-900">{statistics.total}</p>
+              </div>
+            </div>
           </div>
-          <div className="stat-content">
-            <h3>Mới</h3>
-          </div>
-        </div>
 
-        <div
-          className={`stat-card in-progress ${statusFilter === 'IN_PROGRESS' ? 'active' : ''}`}
-          onClick={() => handleStatusFilter('IN_PROGRESS')}
-          style={{ cursor: 'pointer' }}
-          title="Xem yêu cầu đang tư vấn"
-        >
-          <div className="stat-icon">
-            <span className="icon icon-chat"></span>
+          <div
+            onClick={() => handleStatusFilter('NEW')}
+            className={`cursor-pointer rounded-xl border p-4 shadow-sm transition-all bg-white hover:shadow-md ${statusFilter === 'NEW' ? 'ring-2 ring-blue-300 bg-blue-50' : ''}`}
+            title="Xem yêu cầu mới"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 grid place-items-center text-lg">➕</div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-800">Mới</h3>
+                <p className="text-lg font-semibold text-gray-900">{statistics.newRequests}</p>
+              </div>
+            </div>
           </div>
-          <div className="stat-content">
-            <h3>Đang tư vấn</h3>
-          </div>
-        </div>
 
-        <div
-          className={`stat-card success ${statusFilter === 'WON' ? 'active' : ''}`}
-          onClick={() => handleStatusFilter('WON')}
-          style={{ cursor: 'pointer' }}
-          title="Xem yêu cầu thành công"
-        >
-          <div className="stat-icon">
-            <span className="icon icon-check"></span>
+          <div
+            onClick={() => handleStatusFilter('IN_PROGRESS')}
+            className={`cursor-pointer rounded-xl border p-4 shadow-sm transition-all bg-white hover:shadow-md ${statusFilter === 'IN_PROGRESS' ? 'ring-2 ring-yellow-300 bg-yellow-50' : ''}`}
+            title="Xem yêu cầu đang tư vấn"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-yellow-100 text-yellow-700 grid place-items-center text-lg">💬</div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-800">Đang tư vấn</h3>
+                <p className="text-lg font-semibold text-gray-900">{statistics.inProgress}</p>
+              </div>
+            </div>
           </div>
-          <div className="stat-content">
-            <h3>Thành công</h3>
-          </div>
-        </div>
 
-        <div
-          className={`stat-card lost ${statusFilter === 'LOST' ? 'active' : ''}`}
-          onClick={() => handleStatusFilter('LOST')}
-          style={{ cursor: 'pointer' }}
-          title="Xem yêu cầu thất bại"
-        >
-          <div className="stat-icon">
-            <span className="icon icon-x"></span>
+          <div
+            onClick={() => handleStatusFilter('WON')}
+            className={`cursor-pointer rounded-xl border p-4 shadow-sm transition-all bg-white hover:shadow-md ${statusFilter === 'WON' ? 'ring-2 ring-green-300 bg-green-50' : ''}`}
+            title="Xem yêu cầu thành công"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-green-100 text-green-700 grid place-items-center text-lg">✔️</div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-800">Thành công</h3>
+                <p className="text-lg font-semibold text-gray-900">{statistics.won}</p>
+              </div>
+            </div>
           </div>
-          <div className="stat-content">
-            <h3>Thất bại</h3>
-          </div>
-        </div>
-      </div>
 
-      {/* Data Table */}
-      <div className="table-container">
-        <div className="table-header">
-          <h2>Yêu cầu tư vấn ({data.requests.length})</h2>
-          <div className="table-actions">
-            <div className="table-info">
-              {data.requests.length} / {data.totalElements} yêu cầu
+          <div
+            onClick={() => handleStatusFilter('LOST')}
+            className={`cursor-pointer rounded-xl border p-4 shadow-sm transition-all bg-white hover:shadow-md ${statusFilter === 'LOST' ? 'ring-2 ring-red-300 bg-red-50' : ''}`}
+            title="Xem yêu cầu thất bại"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-100 text-red-700 grid place-items-center text-lg">✖️</div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-800">Thất bại</h3>
+                <p className="text-lg font-semibold text-gray-900">{statistics.lost}</p>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="table-wrapper">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>STT</th>
-                <SortableHeader
-                  label="Khách hàng"
-                  sortKey="fullName"
-                  currentSort={sort}
-                  onSort={handleSort}
-                />
-                <SortableHeader
-                  label="SĐT"
-                  sortKey="phone"
-                  currentSort={sort}
-                  onSort={handleSort}
-                />
-                <th>Ghi chú</th>
-                <th>Loại khách</th>
-                <SortableHeader
-                  label="Trạng thái"
-                  sortKey="status"
-                  currentSort={sort}
-                  onSort={handleSort}
-                />
-                <SortableHeader
-                  label="Thời gian"
-                  sortKey="createdAt"
-                  currentSort={sort}
-                  onSort={handleSort}
-                />
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.requests.length > 0 ? (
-                data.requests.map((request, index) => {
-                  return (
-                    <tr key={request.leadId} className="data-row">
-                      <td>{pagination.page * pagination.size + index + 1}</td>
-                      <td className="customer-name">{request.fullName || 'N/A'}</td>
-                      <td className="phone-number">{request.phone || 'N/A'}</td>
-                      <td className="note">{truncateText(request.note, 30) || 'N/A'}</td>
-                      <td className="customer-type">
-                        <span className={`customer-type-badge ${request.customerId ? 'existing' : 'new'}`}>
+        {/* Table */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 bg-gray-50">
+            <h2 className="text-lg font-semibold text-gray-900">Yêu cầu tư vấn ({data.requests.length})</h2>
+            <div className="text-sm text-gray-600">{data.requests.length} / {data.totalElements} yêu cầu</div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr className="text-left text-gray-700">
+                  <th className="px-6 py-2.5 font-semibold">STT</th>
+                  <SortableHeader label="Khách hàng" sortKey="fullName" currentSort={sort} onSort={handleSort} thClassName="px-6 py-2.5" />
+                  <SortableHeader label="SĐT" sortKey="phone" currentSort={sort} onSort={handleSort} thClassName="px-6 py-2.5" />
+                  {/* removed "Ghi chú" column */}
+                  <th className="px-6 py-2.5 font-semibold">Loại khách</th>
+                  <SortableHeader label="Trạng thái" sortKey="status" currentSort={sort} onSort={handleSort} thClassName="px-6 py-2.5" />
+                  <SortableHeader label="Thời gian" sortKey="createdAt" currentSort={sort} onSort={handleSort} thClassName="px-6 py-2.5" />
+                  <th className="px-6 py-2.5 font-semibold">Thao tác</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {hasRequests ? (
+                  data.requests.map((request, index) => (
+                    <tr
+                      key={request.leadId}
+                      className="border-t border-gray-100 even:bg-gray-50 hover:bg-gray-100/60 transition-colors"
+                    >
+                      <td className="px-6 py-2.5 text-gray-800">{pagination.page * pagination.size + index + 1}</td>
+                      <td className="px-6 py-2.5 text-gray-900 font-medium">{request.fullName || 'N/A'}</td>
+                      <td className="px-6 py-2.5 text-gray-800">{request.phone || 'N/A'}</td>
+                      {/* removed note cell */}
+                      <td className="px-6 py-2.5">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium border ${
+                            request.customerId
+                              ? 'bg-blue-50 text-blue-800 border-blue-200'
+                              : 'bg-gray-100 text-gray-800 border-gray-200'
+                          }`}
+                        >
                           {request.customerId ? 'Khách cũ' : 'Khách mới'}
                         </span>
                       </td>
-                      <td className="status">
+                      <td className="px-6 py-2.5">
                         <StatusBadge status={request.status} />
                       </td>
-                      <td className="datetime">
+                      <td className="px-6 py-2.5 text-gray-700">
                         {request.createdAt ? (
-                          <span className="time-badge">
+                          <span className="inline-flex rounded-md bg-white px-2 py-0.5 border border-gray-200 text-xs text-gray-800">
                             {formatDateTimeVN(request.createdAt)}
                           </span>
                         ) : 'N/A'}
                       </td>
-                      <td className="actions">
-                        {/* Dynamic button based on status */}
-                        {request.status === 'NEW' && (
-                          <button
-                            className="action-button consult"
-                            title="Bắt đầu tư vấn"
-                            onClick={() => handleStartConsultation(request)}
-                          >
-                            <span className="icon icon-chat"></span> Tư vấn
-                          </button>
-                        )}
-
-                        {request.status === 'IN_PROGRESS' && (
-                          <button
-                            className="action-button details"
-                            title="Xem chi tiết"
-                            onClick={() => handleViewRequest(request)}
-                          >
-                            <span className="icon icon-details"></span> Chi tiết
-                          </button>
-                        )}
-
-                        {request.status === 'WON' && request.customerId && (
-                          <button
-                            className="action-button profile"
-                            title="Xem hồ sơ khách hàng"
-                            onClick={() => handleViewCustomerProfile(request.customerId)}
-                          >
-                            <span className="icon icon-profile"></span> Hồ sơ
-                          </button>
-                        )}
-
-                        {request.status === 'LOST' && (
-                          <button
-                            className="action-button lost"
-                            title="Yêu cầu thất bại"
-                            onClick={() => handleViewRequest(request)}
-                          >
-                            <span className="icon icon-error"></span> Thất bại
-                          </button>
-                        )}
-
-                        {/* Additional action buttons */}
-                        <button
-                          className="action-button edit"
-                          title="Chỉnh sửa"
-                          onClick={() => handleViewRequest(request)}
-                        >
-                          <span className="icon icon-edit"></span> Chỉnh sửa
-                        </button>
+                      <td className="px-6 py-2.5">
+                        <div className="flex flex-wrap gap-2">
+                          {request.status === 'NEW' && (
+                            <button
+                              className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 text-white px-3 py-1 text-xs font-medium hover:bg-blue-700 transition-colors"
+                              title="Bắt đầu tư vấn"
+                              onClick={() => handleStartConsultation(request)}
+                            >
+                              <span>💬</span> Tư vấn
+                            </button>
+                          )}
+                          {request.status === 'IN_PROGRESS' && (
+                            <button
+                              className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 text-gray-800 px-3 py-1 text-xs font-medium hover:bg-gray-50 transition-colors"
+                              title="Xem chi tiết"
+                              onClick={() => handleViewRequest(request)}
+                            >
+                              <span>📄</span> Chi tiết
+                            </button>
+                          )}
+                          {request.status === 'WON' && request.customerId && (
+                            <button
+                              className="inline-flex items-center gap-1.5 rounded-md border border-green-300 text-green-700 px-3 py-1 text-xs font-medium hover:bg-green-50 transition-colors"
+                              title="Xem hồ sơ khách hàng"
+                              onClick={() => handleViewCustomerProfile(request.customerId)}
+                            >
+                              <span>👤</span> Hồ sơ
+                            </button>
+                          )}
+                          {request.status === 'LOST' && (
+                            <button
+                              className="inline-flex items-center gap-1.5 rounded-md border border-red-300 text-red-700 px-3 py-1 text-xs font-medium hover:bg-red-50 transition-colors"
+                              title="Yêu cầu thất bại"
+                              onClick={() => handleViewRequest(request)}
+                            >
+                              <span>⚠️</span> Thất bại
+                            </button>
+                          )}
+                          {/* removed: Edit button */}
+                        </div>
                       </td>
                     </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan="7" className="no-data">
-                    <div className="no-data-content">
-                      <div className="no-data-icon icon-document"></div>
-                      <p>Chưa có yêu cầu tư vấn nào</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                  ))
+                ) : (
+                  <tr>
+                    {/* colSpan reduced: from 8 -> 7 after removing "Ghi chú" */}
+                    <td colSpan={7} className="px-6 py-10">
+                      <div className="text-center text-gray-500">
+                        <div className="text-4xl mb-3">📄</div>
+                        <p className="text-lg">Chưa có yêu cầu tư vấn nào</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {showPagination && (
+            <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
+              <Pagination
+                currentPage={data.currentPage}
+                totalPages={data.totalPages}
+                totalElements={data.totalElements}
+                pageSize={data.pageSize}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                disabled={data.loading}
+              />
+            </div>
+          )}
         </div>
 
-        {/* Pagination */}
-        {data.totalPages > 1 && (
-          <Pagination
-            currentPage={data.currentPage}
-            totalPages={data.totalPages}
-            totalElements={data.totalElements}
-            pageSize={data.pageSize}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-            disabled={data.loading}
-          />
-        )}
+        {/* Modal */}
+        <RequestDetailModalV2
+          isOpen={modalState.isOpen}
+          onClose={handleCloseModal}
+          request={modalState.selectedRequest}
+          onCreateCustomer={handleCreateCustomer}
+          onCreateAppointment={handleCreateAppointment}
+        />
       </div>
-
-      {/* Request Detail Modal */}
-      <RequestDetailModalV2
-        isOpen={modalState.isOpen}
-        onClose={handleCloseModal}
-        request={modalState.selectedRequest}
-        onCreateCustomer={handleCreateCustomer}
-        onCreateAppointment={handleCreateAppointment}
-      />
     </div>
   );
 };

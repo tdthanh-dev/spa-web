@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { invoicesAPI } from '@/services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { invoicesAPI } from '@/services';
 import { useAuth } from '@/hooks/useAuth';
-import './InvoiceList.css';
+
 
 const InvoiceList = () => {
   const [invoices, setInvoices] = useState([]);
@@ -10,11 +10,7 @@ const InvoiceList = () => {
   const [totalPages, setTotalPages] = useState(0);
   const { userRole } = useAuth();
 
-  useEffect(() => {
-    loadInvoices();
-  }, [currentPage]);
-
-  const loadInvoices = async () => {
+  const loadInvoices = useCallback(async () => {
     try {
       setLoading(true);
       const response = await invoicesAPI.getAll(currentPage, 10);
@@ -26,7 +22,11 @@ const InvoiceList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage]);
+
+  useEffect(() => {
+    loadInvoices();
+  }, [loadInvoices]);
 
   const handleStatusUpdate = async (invoiceId, newStatus) => {
     try {
@@ -80,6 +80,7 @@ const InvoiceList = () => {
               <th>Invoice #</th>
               <th>Customer</th>
               <th>Amount</th>
+              <th>User</th>
               <th>Status</th>
               <th>Due Date</th>
               <th>Actions</th>
@@ -95,7 +96,10 @@ const InvoiceList = () => {
                   {invoice.customerName}
                 </td>
                 <td className="amount">
-                  ${invoice.grandTotal?.toFixed(2)}
+                  ${invoice.totalAmount?.toFixed(2)}
+                </td>
+                <td className="user-name">
+                  {invoice.userName || 'N/A'}
                 </td>
                 <td>
                   <span className={`status-badge ${getStatusColor(invoice.status)}`}>

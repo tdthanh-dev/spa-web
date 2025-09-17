@@ -72,7 +72,7 @@ public class CaseService extends BaseEntity {
 
     @PrePersist
     @PreUpdate
-    private void calculateLineTotal() {
+    public void calculateLineTotal() {
         if (unitPrice != null && qty != null) {
             BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(qty));
             BigDecimal discount = discountAmount != null ? discountAmount : BigDecimal.ZERO;

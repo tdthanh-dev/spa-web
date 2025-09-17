@@ -1,6 +1,8 @@
 package com.htttql.crmmodule.common.exception;
 
 import com.htttql.crmmodule.common.dto.ApiResponse;
+import com.htttql.crmmodule.lead.exception.LeadNotFoundException;
+import com.htttql.crmmodule.lead.exception.LeadOperationException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -117,6 +119,32 @@ public class GlobalExceptionHandler {
                                                 .success(false)
                                                 .error("Authentication failed")
                                                 .errorCode(HttpStatus.UNAUTHORIZED.value())
+                                                .path(request.getRequestURI())
+                                                .build());
+        }
+
+        @ExceptionHandler(LeadNotFoundException.class)
+        public ResponseEntity<ApiResponse<Void>> handleLeadNotFoundException(
+                        LeadNotFoundException ex, HttpServletRequest request) {
+                log.error("Lead not found: {}", ex.getMessage());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                                ApiResponse.<Void>builder()
+                                                .success(false)
+                                                .error(ex.getMessage())
+                                                .errorCode(HttpStatus.NOT_FOUND.value())
+                                                .path(request.getRequestURI())
+                                                .build());
+        }
+
+        @ExceptionHandler(LeadOperationException.class)
+        public ResponseEntity<ApiResponse<Void>> handleLeadOperationException(
+                        LeadOperationException ex, HttpServletRequest request) {
+                log.error("Lead operation failed: {}", ex.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                                ApiResponse.<Void>builder()
+                                                .success(false)
+                                                .error(ex.getMessage())
+                                                .errorCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
                                                 .path(request.getRequestURI())
                                                 .build());
         }

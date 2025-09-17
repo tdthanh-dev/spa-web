@@ -1,30 +1,27 @@
-import { useState, useEffect } from 'react'
-import { isAuthenticated, clearAuthData, getAuthData, getUserData } from '@/utils/auth'
-import { authAPI } from '@/services/api'
+import { useState, useEffect, useCallback } from 'react'
+import { isAuthenticated, clearAuthData, getUserData } from '@/utils/auth'
 import { isValidRole } from '@/utils/roleRouting'
 
 /**
  * Simple authentication hook
  */
 export const useAuth = () => {
+  console.log('🔐 useAuth hook initialized');
+
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState(null)
   const [userRole, setUserRole] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    initializeAuth()
-  }, [])
-
-  const initializeAuth = () => {
+  const initializeAuth = useCallback(() => {
     console.log('🔄 Initializing auth...');
-    
+
     try {
       if (isAuthenticated()) {
         const userData = getUserData();
         console.log('✅ User is authenticated:', userData);
-        
+
         const role = getUserRole(userData);
         if (role && isValidRole(role)) {
           setIsLoggedIn(true);
@@ -46,11 +43,15 @@ export const useAuth = () => {
     } finally {
       setLoading(false);
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    initializeAuth()
+  }, [initializeAuth])
 
   const handleLogin = (userData) => {
     console.log('🔑 Handling login for user:', userData);
-    
+
     const role = getUserRole(userData);
     if (role && isValidRole(role)) {
       setIsLoggedIn(true);
@@ -76,7 +77,7 @@ export const useAuth = () => {
   // Helper function to get role name
   const getUserRole = (user) => {
     if (!user) return null;
-    
+
     // Map role from API response
     if (user.role === 'MANAGER' || user.role === 'ADMIN') {
       return 'ADMIN';
@@ -85,7 +86,7 @@ export const useAuth = () => {
     } else if (user.role === 'RECEPTIONIST') {
       return 'RECEPTIONIST';
     }
-    
+
     // Fallback: try position
     if (user.position === 'Lễ Tân') {
       return 'RECEPTIONIST';
@@ -94,7 +95,7 @@ export const useAuth = () => {
     } else if (user.position === 'Quản lý' || user.position === 'Admin') {
       return 'ADMIN';
     }
-    
+
     console.warn('Unknown role:', user.role, 'Position:', user.position);
     return null;
   }

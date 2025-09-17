@@ -1,13 +1,12 @@
 package com.htttql.crmmodule.core.controller;
 
 import com.htttql.crmmodule.common.dto.ApiResponse;
+import com.htttql.crmmodule.common.dto.PageResponse;
 import com.htttql.crmmodule.core.dto.CustomerRequest;
 import com.htttql.crmmodule.core.dto.CustomerResponse;
-import com.htttql.crmmodule.core.dto.StaffPermissionSummaryDTO;
 import com.htttql.crmmodule.core.service.ICustomerService;
 import com.htttql.crmmodule.security.service.SecurityContextService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -32,32 +31,42 @@ public class CustomerController {
 
     @Operation(summary = "Get all customers with pagination")
     @SecurityRequirement(name = "Bearer Authentication")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST', 'TECHNICIAN')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'RECEPTIONIST', 'TECHNICIAN')")
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<CustomerResponse>>> getAllCustomers(
+    public ResponseEntity<ApiResponse<PageResponse<CustomerResponse>>> getAllCustomers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "customerId") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
 
-        Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+        Sort sort = sortDir.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Page<CustomerResponse> customers = customerService.getAllCustomers(pageable);
-        return ResponseEntity.ok(ApiResponse.success(customers, "Customers retrieved successfully"));
+        Long staffId = null;
+        try {
+            staffId = securityContextService.getCurrentStaffId();
+        } catch (Exception ignored) {
+        }
+
+        Page<CustomerResponse> customers = customerService.getAllCustomers(pageable, staffId);
+        PageResponse<CustomerResponse> response = PageResponse.from(customers);
+        return ResponseEntity.ok(ApiResponse.success(response, "Customers retrieved successfully"));
     }
 
-    @Operation(summary = "Get customer by ID with field-level permissions")
+    @Operation(summary = "Get customer by ID")
     @SecurityRequirement(name = "Bearer Authentication")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST', 'TECHNICIAN')")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<CustomerResponse>> getCustomerById(@PathVariable Long id) {
-        CustomerResponse customer = customerService.getCustomerById(id);
+        Long staffId = null;
+        try {
+            staffId = securityContextService.getCurrentStaffId();
+        } catch (Exception ignored) {
+        }
 
-        // Apply field-level permissions
-        Long currentStaffId = securityContextService.getCurrentStaffId();
-        customer = customerService.applyFieldLevelPermissions(customer, currentStaffId, id);
-
+        CustomerResponse customer = customerService.getCustomerById(id, staffId);
         return ResponseEntity.ok(ApiResponse.success(customer, "Customer retrieved successfully"));
     }
 
@@ -78,10 +87,6 @@ public class CustomerController {
     public ResponseEntity<ApiResponse<CustomerResponse>> updateCustomer(
             @PathVariable Long id,
             @Valid @RequestBody CustomerRequest request) {
-        // Validate field-level permissions before updating
-        Long staffId = securityContextService.getCurrentStaffId();
-        customerService.validateUpdatePermissions(request, staffId, id);
-
         CustomerResponse customer = customerService.updateCustomer(id, request);
         return ResponseEntity.ok(ApiResponse.success(customer, "Customer updated successfully"));
     }
@@ -112,33 +117,4 @@ public class CustomerController {
         customerService.refreshAllCustomerTiers();
         return ResponseEntity.ok(ApiResponse.success("All customer tiers refreshed successfully"));
     }
-
-    // ========== FIELD-LEVEL PERMISSION METHODS ==========
-
-    // ========== FIELD-LEVEL PERMISSION ENDPOINTS ==========
-
-    @GetMapping("/field/check/{staffId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER') or #staffId == authentication.principal.staffId")
-    @Operation(summary = "Check field permissions for staff", description = "Check detailed field-level permissions for a staff member")
-    public ResponseEntity<ApiResponse<StaffPermissionSummaryDTO>> checkFieldPermissions(
-            @Parameter(description = "Staff ID") @PathVariable Long staffId,
-            @Parameter(description = "Customer ID (optional)") @RequestParam(required = false) Long customerId) {
-
-        StaffPermissionSummaryDTO summary = customerService.createStaffPermissionSummary(staffId, customerId);
-        return ResponseEntity.ok(ApiResponse.success(summary, "Field permissions retrieved successfully"));
-    }
-
-    @GetMapping("/field/check/{staffId}/field/{fieldName}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER') or #staffId == authentication.principal.staffId")
-    @Operation(summary = "Check field permission", description = "Check if staff has permission for a specific field")
-    public ResponseEntity<ApiResponse<java.util.Map<String, Boolean>>> checkFieldPermission(
-            @Parameter(description = "Staff ID") @PathVariable Long staffId,
-            @Parameter(description = "Field Name") @PathVariable String fieldName,
-            @Parameter(description = "Customer ID (optional)") @RequestParam(required = false) Long customerId) {
-
-        java.util.Map<String, Boolean> result = customerService.createFieldPermissionMap(staffId, fieldName,
-                customerId);
-        return ResponseEntity.ok(ApiResponse.success(result, "Field permission checked successfully"));
-    }
-
 }

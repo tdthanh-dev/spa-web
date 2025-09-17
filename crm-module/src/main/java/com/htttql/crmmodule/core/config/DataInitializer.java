@@ -1,7 +1,6 @@
 package com.htttql.crmmodule.core.config;
 
 import com.htttql.crmmodule.core.entity.*;
-import com.htttql.crmmodule.common.enums.PermissionType;
 import com.htttql.crmmodule.core.repository.*;
 import com.htttql.crmmodule.common.enums.StaffStatus;
 import com.htttql.crmmodule.common.enums.TierCode;
@@ -31,7 +30,6 @@ import java.util.Map;
 public class DataInitializer implements CommandLineRunner {
 
     private final IRoleRepository roleRepository;
-    private final IPermissionRepository permissionRepository;
     private final IStaffUserRepository staffUserRepository;
     private final ITierRepository tierRepository;
     private final PasswordEncoder passwordEncoder;
@@ -42,9 +40,6 @@ public class DataInitializer implements CommandLineRunner {
 
         // Initialize roles
         initializeRoles();
-
-        // Initialize permissions
-        initializePermissions();
 
         // Initialize tiers
         initializeTiers();
@@ -63,15 +58,9 @@ public class DataInitializer implements CommandLineRunner {
 
         List<Role> roles = Arrays.asList(
                 Role.builder()
-                        .code("ADMIN")
-                        .name("Administrator")
-                        .description("Full system access with all permissions")
-                        .build(),
-
-                Role.builder()
                         .code("MANAGER")
                         .name("Manager")
-                        .description("Management access to customer data and operations")
+                        .description("Full system access with management and administrative permissions")
                         .build(),
 
                 Role.builder()
@@ -88,67 +77,6 @@ public class DataInitializer implements CommandLineRunner {
 
         roleRepository.saveAll(roles);
         log.info("Created {} roles", roles.size());
-    }
-
-    private void initializePermissions() {
-        if (permissionRepository.count() > 0) {
-            log.info("Permissions already exist, skipping initialization");
-            return;
-        }
-
-        List<Permission> permissions = Arrays.asList(
-                // Customer permissions
-                createPermission("CUSTOMER_READ", "View customer information",
-                        PermissionType.VIEW_CUSTOMER_BASIC,
-                        "CUSTOMER", "READ"),
-                createPermission("CUSTOMER_WRITE", "Create and edit customer information",
-                        PermissionType.UPDATE_CUSTOMER_BASIC, "CUSTOMER", "WRITE"),
-                createPermission("CUSTOMER_FINANCIAL", "View customer financial information",
-                        PermissionType.VIEW_CUSTOMER_FINANCIAL, "CUSTOMER", "READ_FINANCIAL"),
-                createPermission("CUSTOMER_HISTORY", "View customer service history",
-                        PermissionType.VIEW_CUSTOMER_HISTORY, "CUSTOMER", "READ_HISTORY"),
-
-                // Appointment permissions
-                createPermission("APPOINTMENT_READ", "View appointment information",
-                        PermissionType.VIEW_APPOINTMENTS,
-                        "APPOINTMENT", "READ"),
-                createPermission("APPOINTMENT_WRITE", "Create and edit appointments",
-                        PermissionType.MANAGE_APPOINTMENTS,
-                        "APPOINTMENT", "WRITE"),
-                createPermission("APPOINTMENT_MANAGE", "Manage customer appointments",
-                        PermissionType.MANAGE_APPOINTMENTS, "APPOINTMENT", "MANAGE"),
-
-                // Invoice permissions
-                createPermission("INVOICE_READ", "View invoice information",
-                        PermissionType.VIEW_INVOICES, "INVOICE",
-                        "READ"),
-                createPermission("INVOICE_WRITE", "Create and edit invoices",
-                        PermissionType.MANAGE_INVOICES, "INVOICE",
-                        "WRITE"),
-
-                // Service permissions
-                createPermission("SERVICE_READ", "View service information",
-                        PermissionType.VIEW_CUSTOMER_DETAILS, "SERVICE",
-                        "READ"),
-                createPermission("SERVICE_WRITE", "Create and edit services",
-                        PermissionType.UPDATE_CUSTOMER_DETAILS, "SERVICE",
-                        "WRITE"));
-
-        permissionRepository.saveAll(permissions);
-        log.info("Created {} permissions", permissions.size());
-    }
-
-    private Permission createPermission(String code, String description, PermissionType permissionType,
-            String resourceType, String action) {
-        return Permission.builder()
-                .code(code)
-                .name(description.split(" ")[0] + " " + resourceType.toLowerCase())
-                .description(description)
-                .permissionType(permissionType)
-                .resourceType(resourceType)
-                .action(action)
-                .isSystemPermission(true)
-                .build();
     }
 
     private void initializeTiers() {
@@ -207,7 +135,6 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         // Get roles
-        Role adminRole = roleRepository.findByCode("ADMIN").orElseThrow();
         Role managerRole = roleRepository.findByCode("MANAGER").orElseThrow();
         Role receptionistRole = roleRepository.findByCode("RECEPTIONIST").orElseThrow();
         Role technicianRole = roleRepository.findByCode("TECHNICIAN").orElseThrow();
@@ -217,9 +144,9 @@ public class DataInitializer implements CommandLineRunner {
                         .fullName("Trịnh Đình Thanh")
                         .phone("0123456789")
                         .email("tdthanh.dev2025@gmail.com")
-                        .passwordHash(passwordEncoder.encode("admin123"))
+                        .passwordHash(passwordEncoder.encode("manager123"))
                         .status(StaffStatus.ACTIVE)
-                        .role(adminRole)
+                        .role(managerRole)
                         .build(),
 
                 StaffUser.builder()

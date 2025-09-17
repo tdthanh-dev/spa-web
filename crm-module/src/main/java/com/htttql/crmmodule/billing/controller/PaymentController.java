@@ -1,6 +1,7 @@
 package com.htttql.crmmodule.billing.controller;
 
 import com.htttql.crmmodule.common.dto.ApiResponse;
+import com.htttql.crmmodule.common.dto.PageResponse;
 import com.htttql.crmmodule.billing.dto.PaymentRequest;
 import com.htttql.crmmodule.billing.dto.PaymentResponse;
 import com.htttql.crmmodule.billing.service.IPaymentService;
@@ -33,9 +34,10 @@ public class PaymentController {
     @SecurityRequirement(name = "Bearer Authentication")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<PaymentResponse>>> getAllPayments(Pageable pageable) {
+    public ResponseEntity<ApiResponse<PageResponse<PaymentResponse>>> getAllPayments(Pageable pageable) {
         Page<PaymentResponse> payments = paymentService.getAllPayments(pageable);
-        return ResponseEntity.ok(ApiResponse.success(payments, "Payments retrieved successfully"));
+        PageResponse<PaymentResponse> response = PageResponse.from(payments);
+        return ResponseEntity.ok(ApiResponse.success(response, "Payments retrieved successfully"));
     }
 
     @Operation(summary = "Get payment by ID")

@@ -32,26 +32,22 @@ public class InvoiceResponse {
 
     // Case info (shallow)
     private Long caseId;
+    private String caseName;
+
+    // User info (shallow)
+    private Long userId;
+    private String userName;
 
     // Invoice amounts
-    private BigDecimal subtotal;
-    private BigDecimal discountTotal;
-    private BigDecimal taxTotal;
-    private BigDecimal grandTotal;
+    private BigDecimal totalAmount;
 
     // Status and dates
     private InvoiceStatus status;
     private LocalDateTime paidAt;
     private LocalDateTime dueDate;
 
-    // Notes and promo
+    // Notes
     private String notes;
-    private String promoCode;
-    private BigDecimal promoDiscount;
-
-    // Loyalty points
-    private Integer pointsRedeemed;
-    private BigDecimal pointsValue;
 
     // Payment summary
     private BigDecimal totalPaid;

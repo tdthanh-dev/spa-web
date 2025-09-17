@@ -66,6 +66,7 @@ export const formatCurrencyVN = (amount) => {
     }).format(amount);
   } catch (error) {
     // Fallback if Intl is not supported
+    console.warn('Currency formatting error:', error)
     return `${amount.toLocaleString('vi-VN')} VNĐ`;
   }
 };
@@ -80,7 +81,7 @@ export const formatEmailOrPhoneForDisplay = (emailOrPhone) => {
 
   // Check if it's an email (contains @)
   if (emailOrPhone.includes('@')) {
-    const [localPart, domain] = emailOrPhone.split('@');
+    const [localPart] = emailOrPhone.split('@');
 
     // Show first 3 characters of local part, hide the rest
     if (localPart.length <= 3) {
@@ -103,4 +104,28 @@ export const formatEmailOrPhoneForDisplay = (emailOrPhone) => {
       return `${start}****${end}`;
     }
   }
+};
+
+/**
+ * Format currency value to Vietnamese Dong
+ * @param {number|string} value - Value to format
+ * @returns {string} - Formatted currency string
+ */
+export const formatCurrency = (value) => {
+  if (value === null || value === undefined || value === '') {
+    return '0 ₫';
+  }
+
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+
+  if (isNaN(numValue)) {
+    return '0 ₫';
+  }
+
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(numValue);
 };

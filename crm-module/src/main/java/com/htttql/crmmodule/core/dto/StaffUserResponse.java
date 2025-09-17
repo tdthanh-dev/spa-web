@@ -27,7 +27,7 @@ public class StaffUserResponse {
     private String displayRole; // "Manager", "Technician", "Receptionist"
     private Boolean isActive;
 
-    // Remove: phone, email (personal data)
-    // Remove: lastLoginAt (tracking behavior)
-    // Remove: createdAt, updatedAt (system metadata)
+    // Contact info (for admin/manager access)
+    private String email;
+    private String phone;
 }

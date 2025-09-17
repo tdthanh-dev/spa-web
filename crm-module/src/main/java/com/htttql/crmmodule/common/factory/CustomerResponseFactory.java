@@ -36,6 +36,26 @@ public class CustomerResponseFactory {
     }
 
     /**
+     * Create full customer response with all data (for permission-based masking)
+     */
+    public CustomerResponse createFullResponse(Customer customer) {
+        return CustomerResponse.builder()
+                .customerId(customer.getCustomerId())
+                .fullName(customer.getFullName())
+                .phone(customer.getPhone()) // Full phone, no masking
+                .email(customer.getEmail()) // Full email, no masking
+                .displayAddress(customer.getAddress()) // Full address
+                .dob(customer.getDob())
+                .notes(customer.getNotes())
+                .tierCode(customer.getTier().getCode().name())
+                .tierName(customer.getTier().getCode().getDescription())
+                .isVip(customer.getIsVip())
+                .totalSpent(customer.getTotalSpent())
+                .totalPoints(customer.getTotalPoints())
+                .build();
+    }
+
+    /**
      * Create detailed response for authorized staff
      */
     public CustomerDetailResponse createDetailResponse(Customer customer) {

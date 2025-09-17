@@ -36,6 +36,11 @@ public interface ICustomerCaseService {
     void deleteCustomerCase(Long id);
 
     /**
+     * Get customer cases by customer ID
+     */
+    Page<CustomerCaseResponse> getCustomerCasesByCustomerId(Long customerId, Pageable pageable);
+
+    /**
      * Update customer case status
      */
     CustomerCaseResponse updateCustomerCaseStatus(Long id, String status);

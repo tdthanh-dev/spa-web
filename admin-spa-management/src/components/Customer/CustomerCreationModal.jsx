@@ -1,385 +1,276 @@
-import React, { useState } from 'react';
-import { customersService } from '@/services';
-import './CustomerCreationModal.css';
+import React from 'react';
+import { useCustomerCreationModal } from '@/hooks';
 
-const CustomerCreationModal = ({ 
-  isOpen, 
-  onClose, 
+const CustomerCreationModal = ({
+  isOpen,
+  onClose,
   onCustomerCreated,
-  leadData = null // Pre-fill data from lead if provided
+  leadData = null,
 }) => {
-  const [formData, setFormData] = useState({
-    fullName: leadData?.fullName || '',
-    phone: leadData?.phone || '',
-    email: leadData?.email || '',
-    address: '',
-    dob: '',
-    gender: 'FEMALE',
-    notes: leadData?.note || '',
-    isVip: false
-  });
-
-  const [validation, setValidation] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const validateField = (name, value) => {
-    const errors = {};
-    
-    switch (name) {
-      case 'fullName':
-        if (!value || value.trim().length < 2) {
-          errors.fullName = 'Họ tên phải có ít nhất 2 ký tự';
-        } else if (value.length > 200) {
-          errors.fullName = 'Họ tên không được quá 200 ký tự';
-        }
-        break;
-      
-      case 'phone':
-        if (!value) {
-          errors.phone = 'Số điện thoại là bắt buộc';
-        } else if (!/^[0-9]{10,11}$/.test(value)) {
-          errors.phone = 'Số điện thoại phải có 10-11 chữ số';
-        }
-        break;
-      
-      case 'email':
-        if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          errors.email = 'Email không hợp lệ';
-        }
-        break;
-      
-      case 'dob':
-        if (value && new Date(value) >= new Date()) {
-          errors.dob = 'Ngày sinh phải là ngày trong quá khứ';
-        }
-        break;
-      
-      case 'address':
-        if (value && value.length > 500) {
-          errors.address = 'Địa chỉ không được quá 500 ký tự';
-        }
-        break;
-    }
-    
-    return errors;
-  };
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-
-    // Validate field
-    const fieldErrors = validateField(field, value);
-    setValidation(prev => ({
-      ...prev,
-      ...fieldErrors,
-      [field]: fieldErrors[field] ? fieldErrors[field] : undefined
-    }));
-  };
-
-  const validateForm = () => {
-    const errors = {};
-    
-    Object.keys(formData).forEach(field => {
-      const fieldErrors = validateField(field, formData[field]);
-      Object.assign(errors, fieldErrors);
-    });
-
-    setValidation(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      setError('Vui lòng sửa các lỗi trong form');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      console.log('Creating customer with data:', formData);
-
-      // Format data for API (convert empty strings to null for optional fields)
-      const apiData = {
-        fullName: formData.fullName.trim(),
-        phone: formData.phone.trim(),
-        email: formData.email?.trim() || null,
-        address: formData.address?.trim() || null,
-        dob: formData.dob || null,
-        gender: formData.gender,
-        notes: formData.notes?.trim() || null,
-        isVip: formData.isVip
-      };
-
-      const response = await customersService.create(apiData);
-      
-      console.log('Customer created successfully:', response);
-
-      if (onCustomerCreated) {
-        onCustomerCreated(response);
-      }
-
-      // Reset form
-      setFormData({
-        fullName: '',
-        phone: '',
-        email: '',
-        address: '',
-        dob: '',
-        gender: 'FEMALE',
-        notes: '',
-        isVip: false
-      });
-
-      onClose();
-
-    } catch (err) {
-      console.error('Error creating customer:', err);
-      
-      let errorMessage = 'Không thể tạo khách hàng';
-      
-      if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.response?.data?.error) {
-        errorMessage = err.response.data.error;
-      } else if (err.response?.status === 400) {
-        errorMessage = 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.';
-      } else if (err.response?.status === 409) {
-        errorMessage = 'Số điện thoại đã tồn tại trong hệ thống';
-      }
-      
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleClose = () => {
-    if (!loading) {
-      setFormData({
-        fullName: leadData?.fullName || '',
-        phone: leadData?.phone || '',
-        email: leadData?.email || '',
-        address: '',
-        dob: '',
-        gender: 'FEMALE',
-        notes: leadData?.note || '',
-        isVip: false
-      });
-      setValidation({});
-      setError(null);
-      onClose();
-    }
-  };
+  const {
+    formData,
+    validation,
+    loading,
+    error,
+    handleInputChange,
+    handleSubmit,
+    handleClose,
+  } = useCustomerCreationModal(leadData, onCustomerCreated, onClose);
 
   if (!isOpen) return null;
 
+  const inputBase =
+    'w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition';
+  const labelBase = 'block text-sm font-medium text-black-700';
+  const sectionCard =
+    'rounded-2xl border border-primary-100 bg-white/80 backdrop-blur-sm p-5';
+
   return (
-    <div className="modal-overlay customer-creation-modal" onClick={handleClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>🆕 Tạo khách hàng mới</h2>
-          <button 
-            className="close-button" 
+    <div
+      className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm overflow-y-auto"
+      onClick={handleClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="bg-white shadow-2xl w-full max-w-[960px] rounded-2xl flex flex-col"
+        style={{ maxHeight: '90vh' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header (sticky) */}
+        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-primary-100 bg-primary-50/80 backdrop-blur">
+          <h2 className="text-lg sm:text-xl font-bold text-black-900 flex items-center gap-2">
+            <span className="text-xl">🆕</span>
+            Tạo khách hàng mới
+          </h2>
+          <button
+            className="p-2 rounded-lg text-black-700 hover:bg-black-50 transition"
             onClick={handleClose}
             disabled={loading}
+            title="Đóng"
           >
-            ×
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="modal-body">
+        {/* Body (scroll) */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
           {error && (
-            <div className="error-message">
-              <span className="error-icon">⚠️</span>
-              {error}
+            <div className="mb-5 p-3 rounded-xl border border-error-200 bg-error-50 text-error-700 text-sm flex items-center gap-2">
+              <span>⚠️</span>
+              <span>{error}</span>
             </div>
           )}
 
-          <div className="form-grid">
-            {/* Basic Information */}
-            <div className="form-section">
-              <h3>Thông tin cơ bản</h3>
-              
-              <div className="form-group">
-                <label htmlFor="fullName" className="required">
-                  👤 Họ và tên
-                </label>
-                <input
-                  id="fullName"
-                  type="text"
-                  value={formData.fullName}
-                  onChange={(e) => handleInputChange('fullName', e.target.value)}
-                  placeholder="Nhập họ và tên"
-                  className={validation.fullName ? 'error' : ''}
-                  disabled={loading}
-                  required
-                />
-                {validation.fullName && (
-                  <span className="field-error">{validation.fullName}</span>
-                )}
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Thông tin cơ bản */}
+            <section className={sectionCard}>
+              <h3 className="text-base font-semibold text-black-900 mb-3 flex items-center gap-2">
+                <span className="text-lg">👤</span>
+                Thông tin cơ bản
+              </h3>
 
-              <div className="form-group">
-                <label htmlFor="phone" className="required">
-                  📞 Số điện thoại
-                </label>
-                <input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  placeholder="0987654321"
-                  className={validation.phone ? 'error' : ''}
-                  disabled={loading}
-                  required
-                />
-                {validation.phone && (
-                  <span className="field-error">{validation.phone}</span>
-                )}
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label htmlFor="fullName" className={labelBase}>
+                    Họ và tên <span className="text-error-500">*</span>
+                  </label>
+                  <input
+                    id="fullName"
+                    type="text"
+                    value={formData.fullName}
+                    onChange={(e) => handleInputChange('fullName', e.target.value)}
+                    placeholder="Nhập họ và tên"
+                    className={`${inputBase} ${
+                      validation.fullName ? 'border-error-300 bg-error-50' : 'border-black-200'
+                    }`}
+                    disabled={loading}
+                    required
+                  />
+                  {validation.fullName && (
+                    <p className="text-error-600 text-xs">{validation.fullName}</p>
+                  )}
+                </div>
 
-              <div className="form-group">
-                <label htmlFor="email">
-                  📧 Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  placeholder="example@email.com"
-                  className={validation.email ? 'error' : ''}
-                  disabled={loading}
-                />
-                {validation.email && (
-                  <span className="field-error">{validation.email}</span>
-                )}
-              </div>
-            </div>
+                <div className="space-y-1.5">
+                  <label htmlFor="phone" className={labelBase}>
+                    Số điện thoại <span className="text-error-500">*</span>
+                  </label>
+                  <input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    placeholder="0987654321"
+                    className={`${inputBase} ${
+                      validation.phone ? 'border-error-300 bg-error-50' : 'border-black-200'
+                    }`}
+                    disabled={loading}
+                    required
+                  />
+                  {validation.phone && (
+                    <p className="text-error-600 text-xs">{validation.phone}</p>
+                  )}
+                </div>
 
-            {/* Personal Information */}
-            <div className="form-section">
-              <h3>Thông tin cá nhân</h3>
-              
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="dob">
-                    🎂 Ngày sinh
+                <div className="space-y-1.5 md:col-span-2">
+                  <label htmlFor="email" className={labelBase}>
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="example@email.com"
+                    className={`${inputBase} ${
+                      validation.email ? 'border-error-300 bg-error-50' : 'border-black-200'
+                    }`}
+                    disabled={loading}
+                  />
+                  {validation.email && (
+                    <p className="text-error-600 text-xs">{validation.email}</p>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* Thông tin cá nhân */}
+            <section className={sectionCard}>
+              <h3 className="text-base font-semibold text-black-900 mb-3 flex items-center gap-2">
+                <span className="text-lg">🎂</span>
+                Thông tin cá nhân
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label htmlFor="dob" className={labelBase}>
+                    Ngày sinh
                   </label>
                   <input
                     id="dob"
                     type="date"
                     value={formData.dob}
                     onChange={(e) => handleInputChange('dob', e.target.value)}
-                    className={validation.dob ? 'error' : ''}
+                    className={`${inputBase} ${
+                      validation.dob ? 'border-error-300 bg-error-50' : 'border-black-200'
+                    }`}
                     disabled={loading}
                     max={new Date().toISOString().split('T')[0]}
                   />
                   {validation.dob && (
-                    <span className="field-error">{validation.dob}</span>
+                    <p className="text-error-600 text-xs">{validation.dob}</p>
                   )}
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="gender">
-                    ⚧ Giới tính
+                <div className="space-y-1.5">
+                  <label htmlFor="gender" className={labelBase}>
+                    Giới tính
                   </label>
                   <select
                     id="gender"
                     value={formData.gender}
                     onChange={(e) => handleInputChange('gender', e.target.value)}
+                    className={`${inputBase} border-black-200`}
                     disabled={loading}
                   >
                     <option value="FEMALE">Nữ</option>
                     <option value="MALE">Nam</option>
                   </select>
                 </div>
-              </div>
 
-              <div className="form-group">
-                <label htmlFor="address">
-                  🏠 Địa chỉ
-                </label>
-                <input
-                  id="address"
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  placeholder="Nhập địa chỉ"
-                  className={validation.address ? 'error' : ''}
-                  disabled={loading}
-                />
-                {validation.address && (
-                  <span className="field-error">{validation.address}</span>
-                )}
-              </div>
-            </div>
-
-            {/* Additional Information */}
-            <div className="form-section full-width">
-              <h3>Thông tin bổ sung</h3>
-              
-              <div className="form-group">
-                <label htmlFor="notes">
-                  📝 Ghi chú
-                </label>
-                <textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
-                  placeholder="Nhập ghi chú về khách hàng..."
-                  rows="3"
-                  disabled={loading}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="checkbox-label">
+                <div className="space-y-1.5 md:col-span-2">
+                  <label htmlFor="address" className={labelBase}>
+                    Địa chỉ
+                  </label>
                   <input
+                    id="address"
+                    type="text"
+                    value={formData.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    placeholder="Nhập địa chỉ"
+                    className={`${inputBase} ${
+                      validation.address ? 'border-error-300 bg-error-50' : 'border-black-200'
+                    }`}
+                    disabled={loading}
+                  />
+                  {validation.address && (
+                    <p className="text-error-600 text-xs">{validation.address}</p>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* Thông tin bổ sung */}
+            <section className={sectionCard}>
+              <h3 className="text-base font-semibold text-black-900 mb-3 flex items-center gap-2">
+                <span className="text-lg">📝</span>
+                Thông tin bổ sung
+              </h3>
+
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label htmlFor="notes" className={labelBase}>
+                    Ghi chú
+                  </label>
+                  <textarea
+                    id="notes"
+                    rows={3}
+                    value={formData.notes}
+                    onChange={(e) => handleInputChange('notes', e.target.value)}
+                    placeholder="Nhập ghi chú về khách hàng..."
+                    className={`${inputBase} border-black-200 resize-none`}
+                    disabled={loading}
+                  />
+                </div>
+
+                <label htmlFor="isVip" className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    id="isVip"
                     type="checkbox"
                     checked={formData.isVip}
                     onChange={(e) => handleInputChange('isVip', e.target.checked)}
+                    className="w-4 h-4 rounded border-black-300 text-primary-600 focus:ring-primary-500"
                     disabled={loading}
                   />
-                  <span className="checkbox-custom"></span>
-                  👑 Khách hàng VIP
+                  <span className="text-sm font-medium text-black-800 flex items-center gap-2">
+                    <span className="text-base">👑</span> Khách hàng VIP
+                  </span>
                 </label>
               </div>
-            </div>
-          </div>
-        </form>
+            </section>
+          </form>
+        </div>
 
-        <div className="modal-footer">
-          <button 
-            type="button" 
-            className="btn btn-secondary" 
+        {/* Footer (sticky) */}
+        <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 px-6 py-4 border-t border-primary-100 bg-white/95 backdrop-blur">
+          <button
+            type="button"
+            className="px-4 py-2 rounded-xl bg-white text-black-800 ring-1 ring-black-200 hover:bg-black-50 transition disabled:opacity-60"
             onClick={handleClose}
             disabled={loading}
           >
             Hủy
           </button>
-          <button 
-            type="submit" 
-            className="btn btn-primary"
+          <button
+            type="submit"
+            className="px-4 py-2 rounded-xl bg-primary-500 text-white hover:bg-primary-600 transition disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2"
             onClick={handleSubmit}
             disabled={loading || !formData.fullName || !formData.phone}
           >
             {loading ? (
               <>
-                <span className="loading-spinner"></span>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
                 Đang tạo...
               </>
             ) : (
               <>
-                ✅ Tạo khách hàng
+                <span>✅</span> Tạo khách hàng
               </>
             )}
           </button>

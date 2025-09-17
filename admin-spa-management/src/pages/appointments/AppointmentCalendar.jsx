@@ -1,283 +1,232 @@
 // filepath: admin-spa-management/src/pages/appointments/AppointmentCalendar.jsx
+import React from 'react';
+import { useAppointmentCalendar } from '@/hooks/useAppointmentCalendar';
 
-import React, { useState, useEffect } from 'react';
-import { appointmentsAPI } from '@/services/api';
-import { formatDateTimeVN } from '@/utils/dateUtils';
-import './AppointmentCalendar.css';
-
-/**
- * Appointment Calendar Component
- * Calendar view for managing appointments with basic functionality
- */
 const AppointmentCalendar = ({ userRole }) => {
-  const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState('week'); // 'day', 'week', 'month'
-
-  useEffect(() => {
-    fetchAppointments();
-  }, [currentDate, viewMode]);
-
-  const fetchAppointments = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Calculate date range based on view mode
-      const { startDate, endDate } = getDateRange(currentDate, viewMode);
-      
-      const response = await appointmentsAPI.getCalendar(
-        startDate.toISOString().split('T')[0],
-        endDate.toISOString().split('T')[0]
-      );
-
-      if (response.data && response.data.success) {
-        setAppointments(response.data.data || []);
-      } else {
-        throw new Error('Invalid response format');
-      }
-
-    } catch (error) {
-      console.error('Error fetching appointments:', error);
-      setError('Không thể tải lịch hẹn. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getDateRange = (date, mode) => {
-    const startDate = new Date(date);
-    const endDate = new Date(date);
-
-    switch (mode) {
-      case 'day':
-        endDate.setDate(startDate.getDate() + 1);
-        break;
-      case 'week':
-        startDate.setDate(date.getDate() - date.getDay()); // Start of week
-        endDate.setDate(startDate.getDate() + 6); // End of week
-        break;
-      case 'month':
-        startDate.setDate(1); // Start of month
-        endDate.setMonth(startDate.getMonth() + 1, 0); // End of month
-        break;
-    }
-
-    return { startDate, endDate };
-  };
-
-  const navigateDate = (direction) => {
-    const newDate = new Date(currentDate);
-    switch (viewMode) {
-      case 'day':
-        newDate.setDate(newDate.getDate() + direction);
-        break;
-      case 'week':
-        newDate.setDate(newDate.getDate() + (direction * 7));
-        break;
-      case 'month':
-        newDate.setMonth(newDate.getMonth() + direction);
-        break;
-    }
-    setCurrentDate(newDate);
-  };
-
-  const getStatusStyle = (status) => {
-    const styles = {
-      SCHEDULED: { background: '#dbeafe', color: '#1e40af' },
-      CONFIRMED: { background: '#dcfce7', color: '#166534' },
-      CHECKED_IN: { background: '#fef3c7', color: '#92400e' },
-      IN_PROGRESS: { background: '#e0e7ff', color: '#5b21b6' },
-      COMPLETED: { background: '#dcfce7', color: '#166534' },
-      CANCELLED: { background: '#fee2e2', color: '#dc2626' },
-      NO_SHOW: { background: '#f3f4f6', color: '#6b7280' }
-    };
-    return styles[status] || styles.SCHEDULED;
-  };
-
-  const formatTimeRange = (start, end) => {
-    const startTime = new Date(start).toLocaleTimeString('vi-VN', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-    const endTime = end ? new Date(end).toLocaleTimeString('vi-VN', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    }) : '?';
-    return `${startTime} - ${endTime}`;
-  };
-
-  if (loading) {
-    return (
-      <div className="appointment-calendar">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Đang tải lịch hẹn...</p>
-        </div>
-      </div>
-    );
-  }
+  const {
+    appointments,
+    loading,
+    error,
+    currentDate,
+    viewMode,
+    fetchAppointments,
+    navigateDate,
+    setViewMode,
+    getStatusStyle,
+    formatTimeRange,
+    stats,
+    hasAppointments,
+    currentPeriodLabel
+  } = useAppointmentCalendar();
 
   return (
-    <div className="appointment-calendar">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="calendar-header">
-        <h1>📅 Lịch hẹn</h1>
-        <div className="header-actions">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          📅 Lịch hẹn
+        </h1>
+        <div className="flex items-center gap-2">
+          <ViewSwitcher viewMode={viewMode} setViewMode={setViewMode} />
+          <DateNavigator
+            label={currentPeriodLabel}
+            onPrev={() => navigateDate(-1)}
+            onNext={() => navigateDate(1)}
+            onToday={() => setViewMode(viewMode)} // Hook đã reset currentDate về hôm nay khi đổi view
+          />
           {(userRole === 'ADMIN' || userRole === 'RECEPTIONIST') && (
-            <button className="btn btn-primary">➕ Đặt lịch mới</button>
+            <button className="px-4 py-2 rounded-lg bg-pink-600 text-white hover:bg-pink-700">
+              ➕ Đặt lịch mới
+            </button>
           )}
         </div>
       </div>
 
-      {/* Navigation */}
-      <div className="calendar-navigation">
-        <div className="nav-controls">
-          <button onClick={() => navigateDate(-1)} className="nav-btn">
-            ← {viewMode === 'day' ? 'Hôm qua' : viewMode === 'week' ? 'Tuần trước' : 'Tháng trước'}
-          </button>
-          
-          <h2 className="current-period">
-            {viewMode === 'month' 
-              ? currentDate.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })
-              : currentDate.toLocaleDateString('vi-VN', { day: '2-digit', month: 'long', year: 'numeric' })
-            }
-          </h2>
-          
-          <button onClick={() => navigateDate(1)} className="nav-btn">
-            {viewMode === 'day' ? 'Ngày mai' : viewMode === 'week' ? 'Tuần sau' : 'Tháng sau'} →
-          </button>
-        </div>
-
-        <div className="view-controls">
-          <button 
-            className={`view-btn ${viewMode === 'day' ? 'active' : ''}`}
-            onClick={() => setViewMode('day')}
-          >
-            Ngày
-          </button>
-          <button 
-            className={`view-btn ${viewMode === 'week' ? 'active' : ''}`}
-            onClick={() => setViewMode('week')}
-          >
-            Tuần
-          </button>
-          <button 
-            className={`view-btn ${viewMode === 'month' ? 'active' : ''}`}
-            onClick={() => setViewMode('month')}
-          >
-            Tháng
-          </button>
-        </div>
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatCard label="Hôm nay" value={stats.today} />
+        <StatCard label="Hoàn thành" value={stats.completed} />
+        <StatCard label="Đang chờ" value={stats.pending} />
       </div>
 
-      {/* Error Display */}
-      {error && (
-        <div className="error-message">
-          <span>⚠️</span>
-          <span>{error}</span>
-          <button onClick={fetchAppointments} className="retry-btn">Thử lại</button>
+      {/* Loading / Error */}
+      {loading && (
+        <div className="flex items-center justify-center py-10 text-gray-600">
+          <span className="h-5 w-5 border-2 border-gray-300 border-t-gray-700 rounded-full animate-spin mr-3" />
+          Đang tải lịch hẹn...
         </div>
       )}
 
-      {/* Appointments List */}
-      <div className="appointments-container">
-        <div className="appointments-header">
-          <h3>Lịch hẹn ({appointments.length})</h3>
-          <div className="legend">
-            <span className="legend-item scheduled">📅 Đã đặt</span>
-            <span className="legend-item confirmed">✅ Xác nhận</span>
-            <span className="legend-item in-progress">🔄 Đang thực hiện</span>
-            <span className="legend-item completed">✅ Hoàn thành</span>
+      {error && !loading && (
+        <div className="flex items-center justify-between p-4 rounded-lg border border-red-200 bg-red-50 text-red-700">
+          <span>⚠️ {error}</span>
+          <button
+            onClick={fetchAppointments}
+            className="px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700"
+          >
+            Thử lại
+          </button>
+        </div>
+      )}
+
+      {/* Appointments */}
+      {!loading && !error && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Lịch hẹn ({appointments.length})
+            </h3>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <LegendPill text="Đã đặt" emoji="📅" />
+              <LegendPill text="Xác nhận" emoji="✅" />
+              <LegendPill text="Đang thực hiện" emoji="🔄" />
+              <LegendPill text="Hoàn thành" emoji="✔️" />
+            </div>
           </div>
-        </div>
 
-        {appointments.length === 0 ? (
-          <div className="no-appointments">
-            <div className="no-data-icon">📅</div>
-            <p>Không có lịch hẹn nào trong khoảng thời gian này</p>
-          </div>
-        ) : (
-          <div className="appointments-list">
-            {appointments.map((appointment) => {
-              const statusStyle = getStatusStyle(appointment.status);
-              
-              return (
-                <div key={appointment.id} className="appointment-card">
-                  <div className="appointment-time">
-                    <div className="time-range">
-                      {formatTimeRange(appointment.start, appointment.end)}
+          {hasAppointments ? (
+            <div className="grid grid-cols-1 gap-3">
+              {appointments.map((appointment) => {
+                const key = appointment.appointmentId || appointment.id || `${appointment.start}-${appointment.customerName || ''}`;
+                const statusStyle = getStatusStyle(appointment.status);
+
+                return (
+                  <div
+                    key={key}
+                    className="bg-white rounded-xl shadow hover:shadow-md transition-shadow p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+                  >
+                    {/* Time block */}
+                    <div className="sm:w-64">
+                      <div className="text-sm text-gray-500">
+                        {formatTimeRange(appointment.start, appointment.end)}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {new Date(appointment.start).toLocaleDateString('vi-VN')}
+                      </div>
                     </div>
-                    <div className="date">
-                      {new Date(appointment.start).toLocaleDateString('vi-VN')}
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 truncate">
+                        {appointment.title || appointment.serviceName || 'Lịch hẹn'}
+                      </div>
+                      <div className="mt-1 text-sm text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
+                        <span>👤 {appointment.customerName || 'Khách'}</span>
+                        <span>💼 {appointment.serviceName || 'Dịch vụ'}</span>
+                        <span>🎨 {appointment.technicianName || 'Chưa phân công'}</span>
+                      </div>
+                      {appointment.description && (
+                        <div className="mt-1 text-sm text-gray-500 line-clamp-2">
+                          {appointment.description}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Status + Actions */}
+                    <div className="flex items-center gap-2 sm:flex-col sm:items-end">
+                      <span
+                        className="inline-flex px-2 py-1 rounded-full text-xs font-medium"
+                        style={{ background: statusStyle.background, color: statusStyle.color }}
+                      >
+                        {statusLabel(appointment.status)}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button className="px-2 py-1 text-sm rounded bg-gray-800 text-white hover:bg-gray-900">
+                          👁️
+                        </button>
+                        {appointment.editable && (
+                          <button className="px-2 py-1 text-sm rounded bg-blue-600 text-white hover:bg-blue-700">
+                            ✏️
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-
-                  <div className="appointment-content">
-                    <div className="appointment-title">{appointment.title}</div>
-                    <div className="appointment-details">
-                      <span>👤 {appointment.customerName}</span>
-                      <span>💼 {appointment.serviceName}</span>
-                      <span>🎨 {appointment.technicianName || 'Chưa phân công'}</span>
-                    </div>
-                    <div className="appointment-description">
-                      {appointment.description}
-                    </div>
-                  </div>
-
-                  <div className="appointment-status">
-                    <span 
-                      className="status-badge"
-                      style={{
-                        background: statusStyle.background,
-                        color: statusStyle.color
-                      }}
-                    >
-                      {appointment.status}
-                    </span>
-                  </div>
-
-                  <div className="appointment-actions">
-                    <button className="action-btn view">👁️</button>
-                    {appointment.editable && (
-                      <button className="action-btn edit">✏️</button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Quick Stats */}
-      <div className="quick-stats">
-        <div className="stat-item">
-          <span className="stat-label">Hôm nay:</span>
-          <span className="stat-value">
-            {appointments.filter(a => {
-              const today = new Date().toDateString();
-              return new Date(a.start).toDateString() === today;
-            }).length} lịch hẹn
-          </span>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl shadow p-8 text-center text-gray-500">
+              <div className="text-3xl mb-2">📭</div>
+              <p>Không có lịch hẹn nào trong khoảng thời gian này</p>
+            </div>
+          )}
         </div>
-        <div className="stat-item">
-          <span className="stat-label">Hoàn thành:</span>
-          <span className="stat-value">
-            {appointments.filter(a => a.status === 'COMPLETED').length} lịch hẹn
-          </span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-label">Đang chờ:</span>
-          <span className="stat-value">
-            {appointments.filter(a => ['SCHEDULED', 'CONFIRMED'].includes(a.status)).length} lịch hẹn
-          </span>
-        </div>
-      </div>
+      )}
     </div>
   );
+};
+
+/* ========== Subcomponents ========== */
+
+const ViewSwitcher = ({ viewMode, setViewMode }) => (
+  <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
+    {[
+      { key: 'day', label: 'Ngày' },
+      { key: 'week', label: 'Tuần' },
+      { key: 'month', label: 'Tháng' },
+    ].map(({ key, label }) => (
+      <button
+        key={key}
+        className={`px-3 py-1.5 text-sm ${
+          viewMode === key ? 'bg-gray-900 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+        }`}
+        onClick={() => setViewMode(key)}
+      >
+        {label}
+      </button>
+    ))}
+  </div>
+);
+
+const DateNavigator = ({ label, onPrev, onNext, onToday }) => (
+  <div className="inline-flex items-center gap-2">
+    <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
+      <button className="px-3 py-1.5 text-sm bg-white text-gray-700 hover:bg-gray-50" onClick={onPrev}>
+        ←
+      </button>
+      <div className="px-3 py-1.5 text-sm bg-gray-50 text-gray-700 min-w-[10rem] text-center">
+        {label}
+      </div>
+      <button className="px-3 py-1.5 text-sm bg-white text-gray-700 hover:bg-gray-50" onClick={onNext}>
+        →
+      </button>
+    </div>
+    <button
+      className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white hover:bg-gray-50"
+      onClick={onToday}
+      title="Hôm nay"
+    >
+      Hôm nay
+    </button>
+  </div>
+);
+
+const StatCard = ({ label, value }) => (
+  <div className="bg-white rounded-xl shadow p-4 text-center">
+    <div className="text-2xl font-bold text-gray-900">{value}</div>
+    <div className="text-sm text-gray-500">{label}</div>
+  </div>
+);
+
+const LegendPill = ({ emoji, text }) => (
+  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-700">
+    <span>{emoji}</span>
+    {text}
+  </span>
+);
+
+const statusLabel = (s) => {
+  switch (s) {
+    case 'SCHEDULED': return 'Đã đặt';
+    case 'CONFIRMED': return 'Xác nhận';
+    case 'CHECKED_IN': return 'Đã đến';
+    case 'IN_PROGRESS': return 'Đang thực hiện';
+    case 'COMPLETED': return 'Hoàn thành';
+    case 'CANCELLED': return 'Hủy';
+    case 'NO_SHOW': return 'Không đến';
+    default: return s || 'Trạng thái';
+  }
 };
 
 export default AppointmentCalendar;

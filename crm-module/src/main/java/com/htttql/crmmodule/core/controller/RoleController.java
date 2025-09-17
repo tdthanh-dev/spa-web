@@ -1,6 +1,7 @@
 package com.htttql.crmmodule.core.controller;
 
 import com.htttql.crmmodule.common.dto.ApiResponse;
+import com.htttql.crmmodule.common.dto.PageResponse;
 import com.htttql.crmmodule.core.dto.RoleRequest;
 import com.htttql.crmmodule.core.dto.RoleResponse;
 import com.htttql.crmmodule.core.service.IRoleService;
@@ -31,11 +32,12 @@ public class RoleController {
     @SecurityRequirement(name = "Bearer Authentication")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<RoleResponse>>> getAllRoles(
+    public ResponseEntity<ApiResponse<PageResponse<RoleResponse>>> getAllRoles(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Page<RoleResponse> roles = roleService.getAllRoles(page, size);
-        return ResponseEntity.ok(ApiResponse.success(roles, "Roles retrieved successfully"));
+        PageResponse<RoleResponse> response = PageResponse.from(roles);
+        return ResponseEntity.ok(ApiResponse.success(response, "Roles retrieved successfully"));
     }
 
     @Operation(summary = "Get role by ID")

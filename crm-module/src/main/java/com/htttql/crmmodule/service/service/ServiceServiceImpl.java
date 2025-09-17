@@ -7,7 +7,6 @@ import com.htttql.crmmodule.service.entity.SpaService;
 import com.htttql.crmmodule.service.repository.IServiceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class ServiceServiceImpl implements IServiceService {
 
     private final IServiceRepository serviceRepository;
-    private final ModelMapper modelMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -106,6 +104,15 @@ public class ServiceServiceImpl implements IServiceService {
     }
 
     private ServiceResponse toResponse(SpaService service) {
-        return modelMapper.map(service, ServiceResponse.class);
+        return ServiceResponse.builder()
+                .serviceId(service.getServiceId())
+                .code(service.getCode())
+                .name(service.getName())
+                .description(service.getDescription())
+                .category(service.getCategory())
+                .price(service.getBasePrice())
+                .duration(service.getDurationMin() != null ? service.getDurationMin() + " phút" : null)
+                .isActive(service.getIsActive())
+                .build();
     }
 }

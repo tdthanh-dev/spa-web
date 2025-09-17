@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { customersService, customerCaseService, invoiceService, paymentService } from '@/services';
 import { formatDateTimeVN } from '@/utils/dateUtils';
 import CustomerCaseCreationModal from './CustomerCaseCreationModal';
 import InvoiceCreationModal from '../Billing/InvoiceCreationModal';
-import './CustomerDetailModal.css';
+
 
 const CustomerDetailModal = ({
   isOpen,
@@ -18,7 +18,7 @@ const CustomerDetailModal = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview'); // overview, treatments, appointments, financial, photos
-  
+
   // Modal states
   const [showCaseCreationModal, setShowCaseCreationModal] = useState(false);
   const [showInvoiceCreationModal, setShowInvoiceCreationModal] = useState(false);
@@ -38,43 +38,55 @@ const CustomerDetailModal = ({
     photos: false
   });
 
-  useEffect(() => {
-    if (isOpen && customerId) {
-      fetchCustomerData();
-    }
-  }, [isOpen, customerId]);
-
-  useEffect(() => {
-    if (isOpen && customer) {
-      // Load tab data when tab changes
-      loadTabData(activeTab);
-    }
-  }, [activeTab, customer]);
-
-  const fetchCustomerData = async () => {
+  const fetchCustomerData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
+      console.log('=== FETCHING CUSTOMER DATA ===');
+      console.log('Customer ID:', customerId);
+      console.log('API Endpoint:', `${customersService.endpoint}/${customerId}`);
+
       const response = await customersService.getById(customerId);
-      setCustomer(response);
       
+      console.log('=== CUSTOMER API RESPONSE ===');
+      console.log('Full Response:', response);
+      console.log('Customer Data:', {
+        customerId: response?.customerId,
+        fullName: response?.fullName,
+        totalSpent: response?.totalSpent,
+        totalPoints: response?.totalPoints,
+        tierCode: response?.tierCode,
+        tierName: response?.tierName,
+        isVip: response?.isVip
+      });
+
+      setCustomer(response);
+
     } catch (err) {
-      console.error('Error fetching customer data:', err);
+      console.error('=== ERROR FETCHING CUSTOMER ===');
+      console.error('Error details:', err);
+      console.error('Response data:', err.response?.data);
       setError('Không thể tải thông tin khách hàng');
     } finally {
       setLoading(false);
     }
-  };
+  }, [customerId]);
 
-  const loadTabData = async (tab) => {
+  useEffect(() => {
+    if (isOpen && customerId) {
+      fetchCustomerData();
+    }
+  }, [isOpen, customerId, fetchCustomerData]);
+
+  const loadTabData = useCallback(async (tab) => {
     if (tabData[tab]?.length > 0) return; // Already loaded
 
     try {
       setTabLoading(prev => ({ ...prev, [tab]: true }));
-      
+
       let data = [];
-      
+
       switch (tab) {
         case 'treatments':
           try {
@@ -85,7 +97,7 @@ const CustomerDetailModal = ({
             data = [];
           }
           break;
-          
+
         case 'appointments':
           // TODO: Implement appointment history API call
           // data = await appointmentService.getByCustomerId(customerId);
@@ -106,7 +118,7 @@ const CustomerDetailModal = ({
             }
           ];
           break;
-          
+
         case 'financial':
           try {
             // Load both invoices and payments for customer
@@ -114,7 +126,7 @@ const CustomerDetailModal = ({
               invoiceService.getByCustomerId(customerId),
               paymentService.getByCustomerId(customerId)
             ]);
-            
+
             const invoices = (invoicesResponse?.content || []).map(invoice => ({
               id: `inv_${invoice.invoiceId}`,
               type: 'INVOICE',
@@ -124,7 +136,7 @@ const CustomerDetailModal = ({
               status: invoice.status,
               invoiceId: invoice.invoiceId
             }));
-            
+
             const payments = (paymentsResponse?.content || []).map(payment => ({
               id: `pay_${payment.paymentId}`,
               type: 'PAYMENT',
@@ -135,9 +147,9 @@ const CustomerDetailModal = ({
               paymentId: payment.paymentId,
               pointsEarned: Math.floor(payment.amount / 100000) // 1 point per 100k VND
             }));
-            
+
             // Combine and sort by date
-            data = [...invoices, ...payments].sort((a, b) => 
+            data = [...invoices, ...payments].sort((a, b) =>
               new Date(b.date) - new Date(a.date)
             );
           } catch (err) {
@@ -145,7 +157,7 @@ const CustomerDetailModal = ({
             data = [];
           }
           break;
-          
+
         case 'photos':
           // TODO: Implement photo gallery API call
           // data = await photoService.getByCustomerId(customerId);
@@ -160,15 +172,22 @@ const CustomerDetailModal = ({
           ];
           break;
       }
-      
+
       setTabData(prev => ({ ...prev, [tab]: data }));
-      
+
     } catch (err) {
       console.error(`Error loading ${tab} data:`, err);
     } finally {
       setTabLoading(prev => ({ ...prev, [tab]: false }));
     }
-  };
+  }, [customerId, tabData]);
+
+  useEffect(() => {
+    if (isOpen && customer) {
+      // Load tab data when tab changes
+      loadTabData(activeTab);
+    }
+  }, [isOpen, activeTab, customer, loadTabData]);
 
   const getTierInfo = (tierCode) => {
     const tiers = {
@@ -239,6 +258,8 @@ const CustomerDetailModal = ({
 
   const handleInvoiceCreated = (newInvoice) => {
     console.log('New invoice created:', newInvoice);
+    // Refresh customer data to update loyalty program info (points, spending, tier)
+    fetchCustomerData();
     // Refresh financial data
     setTabData(prev => ({
       ...prev,
@@ -286,6 +307,16 @@ const CustomerDetailModal = ({
 
   const tierInfo = getTierInfo(customer.tierCode);
 
+  console.log('=== RENDERING CUSTOMER DETAIL ===');
+  console.log('Customer object:', customer);
+  console.log('Tier info:', tierInfo);
+  console.log('Loyalty data:', {
+    totalSpent: customer.totalSpent,
+    totalPoints: customer.totalPoints,
+    tierCode: customer.tierCode,
+    isVip: customer.isVip
+  });
+
   return (
     <div className="modal-overlay customer-detail-modal" onClick={handleClose}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
@@ -303,6 +334,14 @@ const CustomerDetailModal = ({
               </div>
             </div>
             <div className="header-actions">
+              <button
+                className="btn btn-sm btn-outline-secondary"
+                onClick={fetchCustomerData}
+                disabled={loading}
+                title="Làm mới thông tin khách hàng"
+              >
+                {loading ? '⏳' : '🔄'}
+              </button>
               <button
                 className="btn btn-primary"
                 onClick={handleViewFullProfile}
@@ -327,31 +366,31 @@ const CustomerDetailModal = ({
         {/* Tabs */}
         <div className="tabs-container">
           <div className="tabs-nav">
-            <button 
+            <button
               className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
               onClick={() => setActiveTab('overview')}
             >
               📋 Tổng quan
             </button>
-            <button 
+            <button
               className={`tab-btn ${activeTab === 'treatments' ? 'active' : ''}`}
               onClick={() => setActiveTab('treatments')}
             >
               🩺 Điều trị
             </button>
-            <button 
+            <button
               className={`tab-btn ${activeTab === 'appointments' ? 'active' : ''}`}
               onClick={() => setActiveTab('appointments')}
             >
               📅 Lịch hẹn
             </button>
-            <button 
+            <button
               className={`tab-btn ${activeTab === 'financial' ? 'active' : ''}`}
               onClick={() => setActiveTab('financial')}
             >
               💰 Tài chính
             </button>
-            <button 
+            <button
               className={`tab-btn ${activeTab === 'photos' ? 'active' : ''}`}
               onClick={() => setActiveTab('photos')}
             >
@@ -432,7 +471,7 @@ const CustomerDetailModal = ({
               <div className="treatments-tab">
                 <div className="tab-header">
                   <h3>Lịch sử điều trị</h3>
-                  <button 
+                  <button
                     className="btn btn-primary"
                     onClick={handleCreateCase}
                   >
@@ -447,7 +486,7 @@ const CustomerDetailModal = ({
                       <div className="no-treatments">
                         <div className="no-treatments-icon">🩺</div>
                         <p>Chưa có hồ sơ điều trị nào</p>
-                        <button 
+                        <button
                           className="btn btn-primary"
                           onClick={handleCreateCase}
                         >
@@ -524,7 +563,7 @@ const CustomerDetailModal = ({
               <div className="financial-tab">
                 <div className="tab-header">
                   <h3>Lịch sử giao dịch</h3>
-                  <button 
+                  <button
                     className="btn btn-primary"
                     onClick={handleCreateInvoice}
                   >
@@ -539,7 +578,7 @@ const CustomerDetailModal = ({
                       <div className="no-financial">
                         <div className="no-financial-icon">💰</div>
                         <p>Chưa có giao dịch nào</p>
-                        <button 
+                        <button
                           className="btn btn-primary"
                           onClick={handleCreateInvoice}
                         >
@@ -556,18 +595,18 @@ const CustomerDetailModal = ({
                           if (type === 'INVOICE') {
                             const statusMap = {
                               'DRAFT': 'status-draft',
-                              'UNPAID': 'status-unpaid', 
+                              'UNPAID': 'status-unpaid',
                               'PAID': 'status-paid',
                               'OVERDUE': 'status-overdue',
                               'CANCELLED': 'status-cancelled'
                             };
                             return (
                               <span className={`status-badge ${statusMap[status] || 'status-default'}`}>
-                                {status === 'PAID' ? 'Đã thanh toán' : 
-                                 status === 'UNPAID' ? 'Chưa thanh toán' :
-                                 status === 'DRAFT' ? 'Nháp' :
-                                 status === 'OVERDUE' ? 'Quá hạn' :
-                                 status === 'CANCELLED' ? 'Đã hủy' : status}
+                                {status === 'PAID' ? 'Đã thanh toán' :
+                                  status === 'UNPAID' ? 'Chưa thanh toán' :
+                                    status === 'DRAFT' ? 'Nháp' :
+                                      status === 'OVERDUE' ? 'Quá hạn' :
+                                        status === 'CANCELLED' ? 'Đã hủy' : status}
                               </span>
                             );
                           } else {

@@ -2,11 +2,13 @@ package com.htttql.crmmodule.service.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.htttql.crmmodule.common.enums.CaseStatus;
+import com.htttql.crmmodule.common.enums.PaidStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,6 +39,7 @@ public class CustomerCaseResponse {
     // Case details
     private String intakeNote;
     private CaseStatus status;
+    private PaidStatus paidStatus;
     private LocalDate startDate;
     private LocalDate endDate;
 
@@ -47,6 +50,9 @@ public class CustomerCaseResponse {
     // Case services summary
     private Integer servicesCount;
     private List<Long> serviceIds; // Max 3 for preview
+
+    // Financial summary
+    private BigDecimal totalAmount;
 
     // Technician notes summary
     private Integer notesCount;

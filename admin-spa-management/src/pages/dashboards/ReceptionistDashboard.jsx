@@ -1,253 +1,99 @@
-// filepath: admin-spa-management/src/pages/dashboards/ReceptionistDashboard.jsx
+// filepath: src/pages/dashboards/ReceptionistDashboard.jsx
 
-import React, { useState, useEffect } from 'react';
-import { spaCustomersAPI, appointmentsAPI, leadsAPI, API_BASE_URL } from '@/services/api';
+import React from 'react';
+import { useReceptionistDashboard } from '@/hooks/useReceptionistDashboard';
 import { formatDateTimeVN } from '@/utils/dateUtils';
-import { getAccessToken } from '@/utils/auth';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, BarElement } from 'chart.js';
 import { Doughnut, Line, Bar } from 'react-chartjs-2';
-import './ReceptionistDashboard.css';
 
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, BarElement);
 
 /**
- * Receptionist Dashboard - Overview for reception staff
- * Shows daily operations, pending requests, and quick customer actions
+ * Receptionist Dashboard - Tailwind UI
+ * - Chủ đạo hồng (primary) & chữ đen tuyền (black)
+ * - Giữ nguyên logic, thay class CSS bằng Tailwind
  */
-const ReceptionistDashboard = ({ user }) => {
-  const [data, setData] = useState({
-    todayAppointments: [],
-    pendingRequests: [],
-    recentCustomers: [],
-    stats: null,
-    appointmentStatusChart: [],
-    appointmentTrendChart: [],
-    servicePopularityChart: [],
-    customerTiersChart: [],
-    loading: true,
-    error: null
-  });
-
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      setData(prev => ({ ...prev, loading: true, error: null }));
-
-      // Fetch all data in parallel
-      const [
-        appointmentsRes,
-        requestsRes,
-        customersRes,
-        statsRes,
-        appointmentStatusRes,
-        appointmentTrendRes,
-        servicePopularityRes,
-        customerTiersRes
-      ] = await Promise.all([
-        appointmentsAPI.getTodayAppointments(),
-        leadsAPI.getAll(0, 10, 'leadId', 'desc'),
-        spaCustomersAPI.getAll(0, 5),
-        fetch(`${API_BASE_URL}/dashboard/receptionist/stats`, {
-          headers: {
-            'Authorization': `Bearer ${getAccessToken()}`,
-            'Content-Type': 'application/json'
-          }
-        }),
-        fetch(`${API_BASE_URL}/dashboard/charts/appointment-status`, {
-          headers: {
-            'Authorization': `Bearer ${getAccessToken()}`,
-            'Content-Type': 'application/json'
-          }
-        }),
-        fetch(`${API_BASE_URL}/dashboard/charts/appointment-trend`, {
-          headers: {
-            'Authorization': `Bearer ${getAccessToken()}`,
-            'Content-Type': 'application/json'
-          }
-        }),
-        fetch(`${API_BASE_URL}/dashboard/charts/service-popularity`, {
-          headers: {
-            'Authorization': `Bearer ${getAccessToken()}`,
-            'Content-Type': 'application/json'
-          }
-        }),
-        fetch(`${API_BASE_URL}/dashboard/charts/customer-tiers`, {
-          headers: {
-            'Authorization': `Bearer ${getAccessToken()}`,
-            'Content-Type': 'application/json'
-          }
-        })
-      ]);
-
-      // Debug responses
-      console.log('🔍 Appointments Response:', appointmentsRes);
-      console.log('🔍 Requests Response:', requestsRes);
-      console.log('🔍 Customers Response:', customersRes);
-
-      // Handle axios responses (with .data structure)
-      const appointments = appointmentsRes.data || [];
-      const requests = requestsRes.data?.content || requestsRes.data || [];
-      const customers = customersRes.data?.content || customersRes.data || [];
-
-      console.log('📊 Processed data:', {
-        appointments: appointments.length,
-        requests: requests.length,
-        customers: customers.length
-      });
-
-      // Handle fetch responses (direct JSON)
-      const stats = statsRes.ok ? await statsRes.json() : null;
-      const appointmentStatusChart = appointmentStatusRes.ok ? await appointmentStatusRes.json() : [];
-      const appointmentTrendChart = appointmentTrendRes.ok ? await appointmentTrendRes.json() : [];
-      const servicePopularityChart = servicePopularityRes.ok ? await servicePopularityRes.json() : [];
-      const customerTiersChart = customerTiersRes.ok ? await customerTiersRes.json() : [];
-
-      console.log('📈 Dashboard data:', {
-        stats,
-        appointmentStatusChart: appointmentStatusChart.length,
-        appointmentTrendChart: appointmentTrendChart.length,
-        servicePopularityChart: servicePopularityChart.length,
-        customerTiersChart: customerTiersChart.length
-      });
-
-      setData({
-        todayAppointments: Array.isArray(appointments) ? appointments : [],
-        pendingRequests: Array.isArray(requests) ? requests.filter(req => req.status === 'NEW') : [],
-        recentCustomers: Array.isArray(customers) ? customers : [],
-        stats: stats,
-        appointmentStatusChart: Array.isArray(appointmentStatusChart) ? appointmentStatusChart : [],
-        appointmentTrendChart: Array.isArray(appointmentTrendChart) ? appointmentTrendChart : [],
-        servicePopularityChart: Array.isArray(servicePopularityChart) ? servicePopularityChart : [],
-        customerTiersChart: Array.isArray(customerTiersChart) ? customerTiersChart : [],
-        loading: false,
-        error: null
-      });
-
-    } catch (error) {
-      console.error('❌ Error fetching receptionist dashboard data:', error);
-      setData(prev => ({
-        ...prev,
-        todayAppointments: [],
-        pendingRequests: [],
-        recentCustomers: [],
-        stats: null,
-        appointmentStatusChart: [],
-        appointmentTrendChart: [],
-        servicePopularityChart: [],
-        customerTiersChart: [],
-        loading: false,
-        error: 'Không thể tải dữ liệu dashboard. Vui lòng thử lại.'
-      }));
-    }
-  };
-
-  const handleCustomerSearch = async (e) => {
-    e.preventDefault();
-    if (!searchTerm.trim()) return;
-
-    try {
-      const response = await spaCustomersAPI.search(searchTerm);
-      if (response.data?.success) {
-        setSearchResults(response.data.data.content || []);
-      }
-    } catch (error) {
-      console.error('Error searching customers:', error);
-    }
-  };
-
-  const getAppointmentStatusStyle = (status) => {
-    const styles = {
-      SCHEDULED: { background: '#dbeafe', color: '#1e40af' },
-      CONFIRMED: { background: '#dcfce7', color: '#166534' },
-      CHECKED_IN: { background: '#fef3c7', color: '#92400e' },
-      IN_PROGRESS: { background: '#e0e7ff', color: '#5b21b6' }
-    };
-    return styles[status] || styles.SCHEDULED;
-  };
+const ReceptionistDashboard = () => {
+  const {
+    data,
+    searchTerm,
+    searchResults,
+    setSearchTerm,
+    fetchDashboardData,
+    handleCustomerSearch,
+    getAppointmentStatusStyle,
+  } = useReceptionistDashboard();
 
   if (data.loading) {
     return (
-      <div className="receptionist-dashboard">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Đang tải dashboard...</p>
+      <div className="p-6">
+        <div className="grid place-items-center py-24">
+          <div className="h-10 w-10 rounded-full border-4 border-primary-200 border-t-primary-500 animate-spin" />
+          <p className="mt-4 text-black-700">Đang tải dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="receptionist-dashboard">
-      <div className="dashboard-header">
-        <h1>🛎️ Receptionist Dashboard</h1>
-        <p>Quản lý hoạt động hàng ngày và hỗ trợ khách hàng</p>
+    <div className="p-4 sm:p-6 lg:p-8">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-black-900">🛎️ Receptionist Dashboard</h1>
+        <p className="text-black-600">Quản lý hoạt động hàng ngày và hỗ trợ khách hàng</p>
       </div>
 
-      {/* Enhanced Daily Stats */}
-      <div className="stats-row">
-        <div className="stat-card">
-          <div className="stat-number">{data.stats?.todayAppointments || data.todayAppointments.length}</div>
-          <div className="stat-label">Lịch hẹn hôm nay</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-number">{data.stats?.pendingRequests || data.pendingRequests.length}</div>
-          <div className="stat-label">Yêu cầu chờ xử lý</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-number">
-            {data.stats?.todayCompleted || data.todayAppointments.filter(apt => apt.status === 'COMPLETED').length}
-          </div>
-          <div className="stat-label">Hoàn thành</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-number">
-            {data.stats?.weekRevenue ? `${(data.stats.weekRevenue / 1000000).toFixed(1)}M` : '0M'}
-          </div>
-          <div className="stat-label">Doanh thu tuần</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-number">{data.stats?.activeCustomers || 0}</div>
-          <div className="stat-label">Khách hàng active</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-number">{data.stats?.customerRetentionRate ? `${data.stats.customerRetentionRate}%` : '0%'}</div>
-          <div className="stat-label">Tỷ lệ giữ chân KH</div>
-        </div>
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+        <StatCard label="Lịch hẹn hôm nay" value={
+          data.stats?.todayAppointments ?? (Array.isArray(data.todayAppointments) ? data.todayAppointments.length : 0)
+        } />
+        <StatCard label="Yêu cầu chờ xử lý" value={
+          data.stats?.pendingRequests ?? (Array.isArray(data.pendingRequests) ? data.pendingRequests.length : 0)
+        } />
+        <StatCard label="Hoàn thành" value={
+          data.stats?.todayCompleted ?? (Array.isArray(data.todayAppointments) ? data.todayAppointments.filter(apt => apt.status === 'COMPLETED').length : 0)
+        } />
+        <StatCard label="Doanh thu tuần" value={
+          data.stats?.weekRevenue ? `${(data.stats.weekRevenue / 1_000_000).toFixed(1)}M` : '0M'
+        } />
+        <StatCard label="Khách hàng active" value={data.stats?.activeCustomers ?? 0} />
+        <StatCard label="Tỷ lệ giữ chân KH" value={data.stats?.customerRetentionRate ? `${data.stats.customerRetentionRate}%` : '0%'} />
       </div>
 
-      <div className="dashboard-grid">
-        {/* Today Appointments Section */}
-        <div className="dashboard-section today-appointments">
-          <h2>📅 Lịch hẹn hôm nay ({data.todayAppointments.length})</h2>
-          <div className="section-content">
-            {data.todayAppointments.length === 0 ? (
-              <p>Không có lịch hẹn nào hôm nay</p>
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Today Appointments */}
+        <section className="rounded-2xl border border-primary-100 bg-white/80 backdrop-blur shadow-sm">
+          <header className="flex items-center justify-between px-4 py-3 border-b border-primary-100 bg-primary-50/70 rounded-t-2xl">
+            <h2 className="text-base font-semibold text-black-900">
+              📅 Lịch hẹn hôm nay {`(${Array.isArray(data.todayAppointments) ? data.todayAppointments.length : 0})`}
+            </h2>
+          </header>
+          <div className="p-4">
+            {Array.isArray(data.todayAppointments) && data.todayAppointments.length === 0 ? (
+              <p className="text-black-700">Không có lịch hẹn nào hôm nay</p>
             ) : (
-              <div className="appointments-list">
-                {data.todayAppointments.map(appointment => {
+              <div className="space-y-3">
+                {Array.isArray(data.todayAppointments) && data.todayAppointments.map((appointment) => {
                   const statusStyle = getAppointmentStatusStyle(appointment.status);
                   return (
-                    <div key={appointment.id} className="appointment-card">
-                      <div className="appointment-time">{appointment.formattedTime}</div>
-                      <div className="appointment-info">
-                        <div className="customer-name">{appointment.customerName}</div>
-                        <div className="service-name">{appointment.serviceName}</div>
-                        <div className="technician-name">{appointment.technicianName || 'Chưa phân công'}</div>
+                    <div key={appointment.id} className="flex items-center justify-between gap-4 rounded-xl border border-primary-100 bg-white px-4 py-3 shadow-sm hover:shadow transition">
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className="shrink-0 grid place-items-center w-12 h-12 rounded-xl bg-primary-100 text-primary-700 font-semibold">
+                          {appointment.formattedTime || '--:--'}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-black-900 font-medium truncate">{appointment.customerName}</div>
+                          <div className="text-black-600 text-sm truncate">{appointment.serviceName}</div>
+                          <div className="text-black-600 text-xs truncate">{appointment.technicianName || 'Chưa phân công'}</div>
+                        </div>
                       </div>
-                      <div className="appointment-status">
-                        <span 
-                          className="status-badge"
-                          style={{
-                            background: statusStyle.background,
-                            color: statusStyle.color
-                          }}
+                      <div className="shrink-0">
+                        <span
+                           className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border"
+                           style={{ background: statusStyle.background, color: statusStyle.color }}
                         >
                           {appointment.status}
                         </span>
@@ -258,294 +104,268 @@ const ReceptionistDashboard = ({ user }) => {
               </div>
             )}
           </div>
-        </div>
+        </section>
 
-        {/* Pending Requests Section */}
-        <div className="dashboard-section pending-requests">
-          <h2>📞 Yêu cầu tư vấn chờ xử lý ({data.pendingRequests.length})</h2>
-          <div className="section-content">
+        {/* Pending Requests */}
+        <section className="rounded-2xl border border-primary-100 bg-white/80 backdrop-blur shadow-sm">
+          <header className="flex items-center justify-between px-4 py-3 border-b border-primary-100 bg-primary-50/70 rounded-t-2xl">
+            <h2 className="text-base font-semibold text-black-900">📞 Yêu cầu tư vấn chờ xử lý ({data.pendingRequests.length})</h2>
+          </header>
+          <div className="p-4">
             {data.pendingRequests.length === 0 ? (
-              <p>Không có yêu cầu nào chờ xử lý</p>
+              <p className="text-black-700">Không có yêu cầu nào chờ xử lý</p>
             ) : (
-              <div className="requests-list">
-                                 {data.pendingRequests.map(request => (
-                   <div key={request.leadId} className="request-card">
-                     <div className="request-info">
-                       <div className="customer-name">{request.fullName}</div>
-                       <div className="customer-phone">{request.phone}</div>
-                       <div className="customer-note">{request.note}</div>
-                       <div className="customer-type">
-                         <span className={`customer-type-badge ${request.customerId ? 'existing' : 'new'}`}>
-                           {request.customerId ? 'Khách cũ' : 'Khách mới'}
-                         </span>
-                       </div>
-                     </div>
-                                           <div className="request-time">
-                        {request.createdAt ? formatDateTimeVN(request.createdAt) : 'N/A'}
+              <div className="space-y-3">
+                {data.pendingRequests.map((request) => (
+                  <div key={request.leadId} className="flex items-center justify-between gap-4 rounded-xl border border-primary-100 bg-white px-4 py-3 shadow-sm hover:shadow transition">
+                    <div className="min-w-0">
+                      <div className="text-black-900 font-medium truncate">{request.fullName}</div>
+                      <div className="text-black-700 text-sm truncate">{request.phone}</div>
+                      <div className="text-black-600 text-sm truncate">{request.note}</div>
+                      <div className="mt-1">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium border ` + (request.customerId ? 'bg-primary-50 text-primary-800 border-primary-200' : 'bg-black-100 text-black-800 border-black-200')}>
+                          {request.customerId ? 'Khách cũ' : 'Khách mới'}
+                        </span>
                       </div>
-                     <button className="process-btn">Xử lý</button>
-                   </div>
-                 ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Customer Search Section */}
-        <div className="dashboard-section customer-search">
-          <h2>🔍 Tìm kiếm khách hàng</h2>
-          <div className="section-content">
-            <form onSubmit={handleCustomerSearch} className="search-form">
-              <div className="search-input-group">
-                <input
-                  type="text"
-                  placeholder="Tìm theo tên, SĐT, email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="search-input"
-                />
-                <button type="submit" className="search-btn">🔍</button>
-              </div>
-            </form>
-            
-            {searchResults.length > 0 && (
-              <div className="search-results">
-                <h4>Kết quả tìm kiếm:</h4>
-                {searchResults.map(customer => (
-                  <div key={customer.id} className="customer-result">
-                    <div className="customer-info">
-                      <div className="name">{customer.fullName}</div>
-                      <div className="contact">{customer.phone} - {customer.email}</div>
                     </div>
-                    <button className="view-btn">Xem</button>
+                    <div className="shrink-0 text-right">
+                      <div className="text-black-700 text-sm">{request.createdAt ? formatDateTimeVN(request.createdAt) : 'N/A'}</div>
+                      <button className="mt-2 inline-flex items-center rounded-xl bg-primary-500 text-white px-3 py-1.5 text-xs font-medium hover:bg-primary-600">Xử lý</button>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
-        </div>
+        </section>
 
-        {/* Quick Actions Section */}
-        <div className="dashboard-section quick-actions">
-          <h2>⚡ Thao tác nhanh</h2>
-          <div className="section-content">
-            <div className="action-buttons">
-              <button 
-                className="action-btn primary"
-                onClick={() => window.location.href = '/receptionist/customers'}
+        {/* Customer Search */}
+        <section className="rounded-2xl border border-primary-100 bg-white/80 backdrop-blur shadow-sm">
+          <header className="px-4 py-3 border-b border-primary-100 bg-primary-50/70 rounded-t-2xl">
+            <h2 className="text-base font-semibold text-black-900">🔍 Tìm kiếm khách hàng</h2>
+          </header>
+          <div className="p-4">
+            <form onSubmit={handleCustomerSearch} className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Tìm theo tên, SĐT, email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1 rounded-xl border border-primary-200 bg-white px-3 py-2 text-sm text-black-800 placeholder-black-500/70 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+              <button type="submit" className="rounded-xl border border-primary-200 text-black-800 px-3 py-2 hover:bg-primary-50">🔍</button>
+            </form>
+
+            {searchResults.length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-semibold text-black-800 mb-2">Kết quả tìm kiếm:</h4>
+                <div className="space-y-2">
+                  {searchResults.map((customer) => (
+                    <div key={customer.id} className="flex items-center justify-between gap-4 rounded-xl border border-primary-100 bg-white px-3 py-2 text-sm">
+                      <div className="min-w-0">
+                        <div className="text-black-900 font-medium truncate">{customer.fullName}</div>
+                        <div className="text-black-600 truncate">{customer.phone} - {customer.email}</div>
+                      </div>
+                      <button className="shrink-0 inline-flex items-center rounded-xl border border-primary-200 text-black-800 px-3 py-1.5 hover:bg-primary-50">Xem</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Quick Actions */}
+        <section className="rounded-2xl border border-primary-100 bg-white/80 backdrop-blur shadow-sm">
+          <header className="px-4 py-3 border-b border-primary-100 bg-primary-50/70 rounded-t-2xl">
+            <h2 className="text-base font-semibold text-black-900">⚡ Thao tác nhanh</h2>
+          </header>
+          <div className="p-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <button
+                className="rounded-xl bg-primary-500 text-white px-3 py-2 text-sm font-medium hover:bg-primary-600"
+                onClick={() => (window.location.href = '/receptionist/customers')}
               >
                 👤 Đăng ký khách mới
               </button>
-              <button 
-                className="action-btn secondary"
-                onClick={() => window.location.href = '/receptionist/appointments'}
+              <button
+                className="rounded-xl border border-primary-200 text-black-800 px-3 py-2 text-sm font-medium hover:bg-primary-50"
+                onClick={() => (window.location.href = '/receptionist/appointments')}
               >
                 📅 Đặt lịch hẹn
               </button>
-              <button 
-                className="action-btn accent"
-                onClick={() => window.location.href = '/receptionist/consultation'}
+              <button
+                className="rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white px-3 py-2 text-sm font-medium hover:opacity-95"
+                onClick={() => (window.location.href = '/receptionist/consultation')}
               >
                 💬 Xử lý yêu cầu tư vấn
               </button>
-              <button className="action-btn neutral">
+              <button className="rounded-xl border border-black-200 text-black-800 px-3 py-2 text-sm font-medium hover:bg-black-50">
                 📞 Gọi điện check-in
               </button>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Recent Customers */}
-        <div className="dashboard-section recent-customers">
-          <h2>👥 Khách hàng mới ({data.recentCustomers.length})</h2>
-          <div className="section-content">
+        <section className="rounded-2xl border border-primary-100 bg-white/80 backdrop-blur shadow-sm">
+          <header className="px-4 py-3 border-b border-primary-100 bg-primary-50/70 rounded-t-2xl">
+            <h2 className="text-base font-semibold text-black-900">👥 Khách hàng mới ({data.recentCustomers.length})</h2>
+          </header>
+          <div className="p-4">
             {data.recentCustomers.length === 0 ? (
-              <p>Chưa có khách hàng mới</p>
+              <p className="text-black-700">Chưa có khách hàng mới</p>
             ) : (
-              <div className="customers-list">
-                {data.recentCustomers.map(customer => (
-                  <div key={customer.id} className="customer-item">
-                    <div className="customer-info">
-                      <div className="customer-name">{customer.fullName}</div>
-                      <div className="customer-contact">{customer.phone}</div>
+              <div className="space-y-2">
+                {data.recentCustomers.map((customer) => (
+                  <div key={customer.id} className="flex items-center justify-between gap-4 rounded-xl border border-primary-100 bg-white px-3 py-2">
+                    <div className="min-w-0">
+                      <div className="text-black-900 font-medium truncate">{customer.fullName}</div>
+                      <div className="text-black-700 text-sm truncate">{customer.phone}</div>
                     </div>
-                    <div className="customer-date">
-                      {formatDateTimeVN(customer.createdAt)}
-                    </div>
+                    <div className="shrink-0 text-black-700 text-sm">{formatDateTimeVN(customer.createdAt)}</div>
                   </div>
                 ))}
               </div>
             )}
           </div>
-        </div>
+        </section>
 
-        {/* Charts Section */}
+        {/* Charts */}
         {data.appointmentStatusChart.length > 0 && (
-          <div className="dashboard-section chart-section">
-            <h2>📊 Phân bố trạng thái lịch hẹn</h2>
-            <div className="section-content">
-              <div className="chart-container">
+          <section className="rounded-2xl border border-primary-100 bg-white/80 backdrop-blur shadow-sm">
+            <header className="px-4 py-3 border-b border-primary-100 bg-primary-50/70 rounded-t-2xl">
+              <h2 className="text-base font-semibold text-black-900">📊 Phân bố trạng thái lịch hẹn</h2>
+            </header>
+            <div className="p-4">
+              <div className="h-64">
                 <Doughnut
                   data={{
-                    labels: data.appointmentStatusChart.map(item => item.label),
-                    datasets: [{
-                      data: data.appointmentStatusChart.map(item => item.count),
-                      backgroundColor: data.appointmentStatusChart.map(item => item.color),
-                      borderWidth: 1
-                    }]
+                    labels: data.appointmentStatusChart.map((item) => item.label),
+                    datasets: [
+                      {
+                        data: data.appointmentStatusChart.map((item) => item.count),
+                        backgroundColor: data.appointmentStatusChart.map((item) => item.color),
+                        borderWidth: 1,
+                      },
+                    ],
                   }}
-                  options={{
-                    responsive: true,
-                    plugins: {
-                      legend: {
-                        position: 'bottom'
-                      }
-                    }
-                  }}
+                  options={{ responsive: true, plugins: { legend: { position: 'bottom' } } }}
                 />
               </div>
             </div>
-          </div>
+          </section>
         )}
 
         {data.appointmentTrendChart.length > 0 && (
-          <div className="dashboard-section chart-section">
-            <h2>📈 Xu hướng lịch hẹn 7 ngày</h2>
-            <div className="section-content">
-              <div className="chart-container">
+          <section className="rounded-2xl border border-primary-100 bg-white/80 backdrop-blur shadow-sm">
+            <header className="px-4 py-3 border-b border-primary-100 bg-primary-50/70 rounded-t-2xl">
+              <h2 className="text-base font-semibold text-black-900">📈 Xu hướng lịch hẹn 7 ngày</h2>
+            </header>
+            <div className="p-4">
+              <div className="h-64">
                 <Line
                   data={{
-                    labels: data.appointmentTrendChart.map(item => item.label),
-                    datasets: [{
-                      label: 'Số lịch hẹn',
-                      data: data.appointmentTrendChart.map(item => item.count),
-                      borderColor: '#3b82f6',
-                      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                      tension: 0.4
-                    }]
+                    labels: data.appointmentTrendChart.map((item) => item.label),
+                    datasets: [
+                      {
+                        label: 'Số lịch hẹn',
+                        data: data.appointmentTrendChart.map((item) => item.count),
+                        borderColor: '#ec4899', // primary-500
+                        backgroundColor: 'rgba(236,72,153,0.12)',
+                        tension: 0.4,
+                      },
+                    ],
                   }}
-                  options={{
-                    responsive: true,
-                    scales: {
-                      y: {
-                        beginAtZero: true
-                      }
-                    }
-                  }}
+                  options={{ responsive: true, scales: { y: { beginAtZero: true } } }}
                 />
               </div>
             </div>
-          </div>
+          </section>
         )}
 
         {data.servicePopularityChart.length > 0 && (
-          <div className="dashboard-section chart-section">
-            <h2>🏆 Dịch vụ phổ biến</h2>
-            <div className="section-content">
-              <div className="chart-container">
+          <section className="rounded-2xl border border-primary-100 bg-white/80 backdrop-blur shadow-sm">
+            <header className="px-4 py-3 border-b border-primary-100 bg-primary-50/70 rounded-t-2xl">
+              <h2 className="text-base font-semibold text-black-900">🏆 Dịch vụ phổ biến</h2>
+            </header>
+            <div className="p-4">
+              <div className="h-64">
                 <Bar
                   data={{
-                    labels: data.servicePopularityChart.map(item => item.label),
-                    datasets: [{
-                      label: 'Số lượt sử dụng',
-                      data: data.servicePopularityChart.map(item => item.count),
-                      backgroundColor: data.servicePopularityChart.map(item => item.color),
-                      borderRadius: 4
-                    }]
+                    labels: data.servicePopularityChart.map((item) => item.label),
+                    datasets: [
+                      {
+                        label: 'Số lượt sử dụng',
+                        data: data.servicePopularityChart.map((item) => item.count),
+                        backgroundColor: data.servicePopularityChart.map((item) => item.color),
+                        borderRadius: 4,
+                      },
+                    ],
                   }}
                   options={{
                     responsive: true,
-                    scales: {
-                      y: {
-                        beginAtZero: true
-                      }
-                    },
-                    plugins: {
-                      legend: {
-                        display: false
-                      }
-                    }
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { display: false } },
                   }}
                 />
               </div>
             </div>
-          </div>
+          </section>
         )}
 
         {data.customerTiersChart.length > 0 && (
-          <div className="dashboard-section chart-section">
-            <h2>👑 Phân loại khách hàng</h2>
-            <div className="section-content">
-              <div className="chart-container">
+          <section className="rounded-2xl border border-primary-100 bg-white/80 backdrop-blur shadow-sm">
+            <header className="px-4 py-3 border-b border-primary-100 bg-primary-50/70 rounded-t-2xl">
+              <h2 className="text-base font-semibold text-black-900">👑 Phân loại khách hàng</h2>
+            </header>
+            <div className="p-4">
+              <div className="h-64">
                 <Doughnut
                   data={{
-                    labels: data.customerTiersChart.map(item => item.label),
-                    datasets: [{
-                      data: data.customerTiersChart.map(item => item.count),
-                      backgroundColor: data.customerTiersChart.map(item => item.color),
-                      borderWidth: 1
-                    }]
+                    labels: data.customerTiersChart.map((item) => item.label),
+                    datasets: [
+                      {
+                        data: data.customerTiersChart.map((item) => item.count),
+                        backgroundColor: data.customerTiersChart.map((item) => item.color),
+                        borderWidth: 1,
+                      },
+                    ],
                   }}
-                  options={{
-                    responsive: true,
-                    plugins: {
-                      legend: {
-                        position: 'bottom'
-                      }
-                    }
-                  }}
+                  options={{ responsive: true, plugins: { legend: { position: 'bottom' } } }}
                 />
               </div>
             </div>
-          </div>
+          </section>
         )}
 
-        {/* Enhanced Daily Overview */}
-        <div className="dashboard-section daily-overview">
-          <h2>📊 Tổng quan chi tiết</h2>
-          <div className="section-content">
-            <div className="overview-stats-grid">
-              <div className="overview-item">
-                <span className="label">Lịch hẹn hôm nay:</span>
-                <span className="value">{data.stats?.todayAppointments || data.todayAppointments.length}</span>
-              </div>
-              <div className="overview-item">
-                <span className="label">Đã check-in:</span>
-                <span className="value">{data.stats?.todayCheckIns || 0}</span>
-              </div>
-              <div className="overview-item">
-                <span className="label">Hoàn thành:</span>
-                <span className="value">{data.stats?.todayCompleted || 0}</span>
-              </div>
-              <div className="overview-item">
-                <span className="label">Không đến:</span>
-                <span className="value">{data.stats?.todayNoShows || 0}</span>
-              </div>
-              <div className="overview-item">
-                <span className="label">Yêu cầu chờ xử lý:</span>
-                <span className="value">{data.stats?.pendingRequests || data.pendingRequests.length}</span>
-              </div>
-              <div className="overview-item">
-                <span className="label">Khách hàng mới hôm nay:</span>
-                <span className="value">{data.stats?.newCustomersToday || 0}</span>
-              </div>
-              <div className="overview-item">
-                <span className="label">Tổng khách hàng:</span>
-                <span className="value">{data.stats?.totalCustomers || 0}</span>
-              </div>
-              <div className="overview-item">
-                <span className="label">Tỷ lệ giữ chân KH:</span>
-                <span className="value">{data.stats?.customerRetentionRate ? `${data.stats.customerRetentionRate}%` : '0%'}</span>
-              </div>
+        {/* Daily Overview */}
+        <section className="rounded-2xl border border-primary-100 bg-white/80 backdrop-blur shadow-sm xl:col-span-2">
+          <header className="px-4 py-3 border-b border-primary-100 bg-primary-50/70 rounded-t-2xl">
+            <h2 className="text-base font-semibold text-black-900">📊 Tổng quan chi tiết</h2>
+          </header>
+          <div className="p-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <OverviewItem label="Lịch hẹn hôm nay:" value={
+                data.stats?.todayAppointments ?? (Array.isArray(data.todayAppointments) ? data.todayAppointments.length : 0)
+              } />
+              <OverviewItem label="Đã check-in:" value={data.stats?.todayCheckIns ?? 0} />
+              <OverviewItem label="Hoàn thành:" value={data.stats?.todayCompleted ?? 0} />
+              <OverviewItem label="Không đến:" value={data.stats?.todayNoShows ?? 0} />
+              <OverviewItem label="Yêu cầu chờ xử lý:" value={data.stats?.pendingRequests ?? data.pendingRequests.length} />
+              <OverviewItem label="Khách hàng mới hôm nay:" value={data.stats?.newCustomersToday ?? 0} />
+              <OverviewItem label="Tổng khách hàng:" value={data.stats?.totalCustomers ?? 0} />
+              <OverviewItem label="Tỷ lệ giữ chân KH:" value={data.stats?.customerRetentionRate ? `${data.stats.customerRetentionRate}%` : '0%'} />
             </div>
           </div>
-        </div>
+        </section>
       </div>
 
+      {/* Error banner */}
       {data.error && (
-        <div className="error-banner">
+        <div className="mt-6 flex items-center justify-between rounded-2xl border border-error-200 bg-error-50 text-error-700 px-4 py-3">
           <span>⚠️ {data.error}</span>
-          <button onClick={fetchDashboardData} className="retry-btn">Thử lại</button>
+          <button onClick={fetchDashboardData} className="rounded-xl bg-white text-error-700 border border-error-200 px-3 py-1.5 text-sm hover:bg-error-100">Thử lại</button>
         </div>
       )}
     </div>
@@ -553,3 +373,18 @@ const ReceptionistDashboard = ({ user }) => {
 };
 
 export default ReceptionistDashboard;
+
+/* ---------- Small presentational components (Tailwind) ---------- */
+const StatCard = ({ label, value }) => (
+  <div className="rounded-2xl border border-primary-100 bg-white/80 backdrop-blur p-4 shadow-sm hover:shadow transition">
+    <div className="text-2xl font-bold text-black-900">{value}</div>
+    <div className="text-sm text-black-600">{label}</div>
+  </div>
+);
+
+const OverviewItem = ({ label, value }) => (
+  <div className="flex items-center justify-between rounded-xl border border-primary-100 bg-white px-3 py-2 text-sm">
+    <span className="text-black-700">{label}</span>
+    <span className="text-black-900 font-semibold">{value}</span>
+  </div>
+);

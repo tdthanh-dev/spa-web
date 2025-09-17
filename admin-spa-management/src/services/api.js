@@ -14,16 +14,16 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     console.log(`Making ${config.method?.toUpperCase()} request to: ${config.url}`);
-    
-      // Add auth token for protected endpoints
-  const token = getAccessToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-    console.log('With auth token for endpoint:', config.url);
-  } else {
-    console.log('No auth token available for:', config.url);
-  }
-    
+
+    // Add auth token for protected endpoints
+    const token = getAccessToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('With auth token for endpoint:', config.url);
+    } else {
+      console.log('No auth token available for:', config.url);
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -40,15 +40,15 @@ api.interceptors.response.use(
       data: error.response?.data,
       message: error.message
     });
-    
+
     if (error.response?.status === 401) {
       console.warn('🔴 401 Unauthorized - Redirecting to login');
-      
+
       // Clear auth data and redirect
       clearAuthData();
       window.location.href = '/';
     }
-    
+
     return Promise.reject(error);
   }
 );
@@ -56,15 +56,15 @@ api.interceptors.response.use(
 // Authentication API
 export const authAPI = {
   // Request OTP for login
-  requestOtp: (username, password) => 
+  requestOtp: (username, password) =>
     api.post(API_ENDPOINTS.AUTH.REQUEST_OTP, {
       username,
       password,
       purpose: 'LOGIN'
     }),
-  
+
   // Verify OTP code and get authentication tokens
-  verifyOtp: (username, otpCode) => 
+  verifyOtp: (username, otpCode) =>
     api.post(API_ENDPOINTS.AUTH.VERIFY_OTP, {
       username,
       otpCode
@@ -76,7 +76,7 @@ export const authAPI = {
   },
 
   // Standard login (without OTP)
-  login: (emailOrPhone, password) => 
+  login: (emailOrPhone, password) =>
     api.post(API_ENDPOINTS.AUTH.LOGIN, {
       emailOrPhone,
       password
@@ -96,10 +96,10 @@ export const authAPI = {
         // Extract auth data from response
         const authData = response.data.data;
         console.log('Auth data:', authData);
-        
+
         // Save authentication data (simplified)
         saveAuthData(authData);
-        
+
         return {
           success: true,
           message: response.data.message,
@@ -113,14 +113,14 @@ export const authAPI = {
       };
     } catch (error) {
       console.error('OTP verification error:', error);
-      
+
       if (error.response && error.response.data) {
         return {
           success: false,
           message: error.response.data.error || error.response.data.message || 'OTP verification failed'
         };
       }
-      
+
       throw error;
     }
   }
@@ -201,7 +201,7 @@ export const leadsAPI = {
     });
     return api.get(`${API_ENDPOINTS.LEADS}?${params}`);
   },
-  
+
   // Get leads with search functionality
   getAllWithSearch: (page = 0, size = 20, sortBy = 'leadId', sortDir = 'desc', search = '') => {
     const params = new URLSearchParams({
@@ -210,14 +210,14 @@ export const leadsAPI = {
       sortBy,
       sortDir
     });
-    
+
     if (search) {
       params.append('search', search);
     }
-    
+
     return api.get(`${API_ENDPOINTS.LEADS}?${params}`);
   },
-  
+
   // Get leads by status
   getByStatus: (status, page = 0, size = 20, sortBy = 'leadId', sortDir = 'desc') => {
     const params = new URLSearchParams({
@@ -229,20 +229,20 @@ export const leadsAPI = {
     });
     return api.get(`${API_ENDPOINTS.LEADS}?${params}`);
   },
-  
-  getById: (id) => 
+
+  getById: (id) =>
     api.get(`${API_ENDPOINTS.LEADS}/${id}`),
-  
-  create: (data) => 
+
+  create: (data) =>
     api.post(API_ENDPOINTS.LEADS, data),
-  
-  update: (id, data) => 
+
+  update: (id, data) =>
     api.put(`${API_ENDPOINTS.LEADS}/${id}`, data),
-  
+
   updateStatus: (id, status) =>
     api.put(`${API_ENDPOINTS.LEADS}/${id}/status?status=${status}`, {}),
-  
-  delete: (id) => 
+
+  delete: (id) =>
     api.delete(`${API_ENDPOINTS.LEADS}/${id}`)
 };
 
@@ -259,31 +259,31 @@ export const spaCustomersAPI = {
 
   update: (id, data) =>
     api.put(`${API_ENDPOINTS.CUSTOMERS}/${id}`, data),
-  
+
   search: (searchTerm, page = 0, size = 20) =>
     api.get(`${API_ENDPOINTS.CUSTOMERS}?search=${searchTerm}&page=${page}&size=${size}`)
 };
 
 // Services API
 export const servicesAPI = {
-  getAll: (page = 0, size = 20) => 
+  getAll: (page = 0, size = 20) =>
     api.get(`${API_ENDPOINTS.SERVICES}?page=${page}&size=${size}`),
-  
-  getById: (id) => 
+
+  getById: (id) =>
     api.get(`${API_ENDPOINTS.SERVICES}/${id}`),
-  
-  create: (data) => 
+
+  create: (data) =>
     api.post(API_ENDPOINTS.SERVICES, data),
-  
-  update: (id, data) => 
+
+  update: (id, data) =>
     api.put(`${API_ENDPOINTS.SERVICES}/${id}`, data),
-  
-  delete: (id) => 
+
+  delete: (id) =>
     api.delete(`${API_ENDPOINTS.SERVICES}/${id}`),
-  
+
   getCategories: () =>
     api.get(`${API_ENDPOINTS.SERVICES}/categories`),
-  
+
   getActive: () =>
     api.get(`${API_ENDPOINTS.SERVICES}/active`)
 };
@@ -384,7 +384,11 @@ export const tasksAPI = {
     api.delete(`${API_ENDPOINTS.AUDIT}/tasks/${id}`)
 };
 
+
 export default api;
 
 // Export API_BASE_URL for use in components
 export { API_BASE_URL };
+
+// Individual API modules are now imported separately
+// No need to re-export them from here

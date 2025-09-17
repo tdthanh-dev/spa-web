@@ -1,256 +1,161 @@
-/* ===== CSS ARCHITECTURE ===== */
-/* Import design tokens first */
-@import './styles/tokens.css';
+@import "tailwindcss";
 
-/* ===== RESET & BASE STYLES ===== */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* Define custom theme for Tailwind v4 - Pink theme với chữ đen tuyền */
+@theme {
+  /* Primary colors - tone màu hồng phấn */
+  --color-primary-50: #fdf2f8;
+  --color-primary-100: #fce7f3;
+  --color-primary-200: #fbcfe8;
+  --color-primary-300: #f9a8d4;
+  --color-primary-400: #f472b6;
+  --color-primary-500: #ec4899;
+  --color-primary-600: #db2777;
+  --color-primary-700: #be185d;
+  --color-primary-800: #9d174d;
+  --color-primary-900: #831843;
+  
+  /* Black tones - chữ đen tuyền */
+  --color-black-50: #f8fafc;
+  --color-black-100: #f1f5f9;
+  --color-black-200: #e2e8f0;
+  --color-black-300: #cbd5e1;
+  --color-black-400: #94a3b8;
+  --color-black-500: #64748b;
+  --color-black-600: #475569;
+  --color-black-700: #334155;
+  --color-black-800: #1e293b;
+  --color-black-900: #0f172a;
+  
+  /* Supporting colors */
+  --color-success-50: #f0fdf4;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-success-700: #15803d;
+  
+  --color-warning-50: #fffbeb;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  
+  --color-error-50: #fef2f2;
+  --color-error-200: #fecaca;
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+  --color-error-700: #b91c1c;
+  
+  /* Red colors for compatibility */
+  --color-red-50: #fef2f2;
+  --color-red-200: #fecaca;
+  --color-red-500: #ef4444;
+  --color-red-700: #b91c1c;
+  
+  /* Font families */
+  --font-family-sans: 'Inter', system-ui, sans-serif;
+  
+  /* Custom spacing */
+  --spacing-18: 4.5rem;
+  --spacing-88: 22rem;
+  
+  /* Border radius */
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+  
+  /* Animations */
+  --animate-fade-in: fadeIn 0.3s ease-in-out;
+  --animate-slide-up: slideUp 0.4s ease-out;
+  --animate-bounce-soft: bounce 1s ease-in-out;
 }
 
-/* ===== ROOT VARIABLES ===== */
-/* Legacy variables and overrides */
-:root {
-  /* Typography - using design tokens */
-  font-family: var(--font-family-primary);
-  line-height: var(--line-height-normal);
-  font-weight: var(--font-weight-normal);
-
-  /* Global colors - using design tokens */
-  color: var(--color-gray-900);
-  background-color: var(--color-gray-50);
-
-  /* ===== LEGACY COMPATIBILITY ===== */
-  /* These will be gradually removed as components migrate to new tokens */
-
-  /* Legacy text colors (now use color tokens) */
-  --text-primary-dark: var(--color-gray-900);
-  --text-secondary-dark: var(--color-gray-700);
-  --text-primary-light: #ffffff;
-  --text-secondary-light: #f5f5f5;
-
-  /* Legacy link colors */
-  --link-light-bg: var(--color-info);
-  --link-light-bg-hover: var(--color-info-700);
-  --link-dark-bg: #81d4fa;
-  --link-dark-bg-hover: #29b6f6;
-
-  /* Legacy status colors (now use semantic color tokens) */
-  --success: var(--color-success);
-  --warning: var(--color-warning);
-  --error: var(--color-error);
-  --info: var(--color-info);
-
-  /* Legacy status colors for dark backgrounds */
-  --success-light: var(--color-success-100);
-  --warning-light: var(--color-warning-100);
-  --error-light: var(--color-error-100);
-  --info-light: var(--color-info-100);
-
-  /* ===== SMOOTH RENDERING ===== */
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* Keyframes for animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-body {
-  margin: 0;
+@keyframes slideUp {
+  from { 
+    transform: translateY(20px); 
+    opacity: 0; 
+  }
+  to { 
+    transform: translateY(0); 
+    opacity: 1; 
+  }
+}
+
+/* Plugin imports for Tailwind v4 */
+@plugin "@tailwindcss/forms";
+@plugin "@tailwindcss/typography";
+
+/* Layout Styles */
+.layout {
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--color-primary-100) 0%, var(--color-gray-50) 100%);
-  font-size: var(--font-size-sm);
-  color: var(--color-gray-900);
+  background-color: #f8fafc;
 }
 
-/* ===== TYPOGRAPHY ===== */
-h1, h2, h3, h4, h5, h6 {
-  color: var(--color-gray-900);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-tight);
-  text-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
+.layout aside {
+  position: fixed;
+  left: 0;
+  top: 64px; /* Header height */
+  height: calc(100vh - 64px); /* Full height minus header */
+  width: 180px;
+  z-index: 10;
+  background-color: white;
+  border-right: 1px solid #e2e8f0;
+  box-shadow: 2px 0 4px 0 rgba(0, 0, 0, 0.05);
+  overflow: visible; /* Allow content to show */
+  display: flex;
+  flex-direction: column;
 }
 
-h1 { font-size: var(--font-size-4xl); }
-h2 { font-size: var(--font-size-3xl); }
-h3 { font-size: var(--font-size-2xl); }
-h4 { font-size: var(--font-size-xl); }
-h5 { font-size: var(--font-size-lg); }
-h6 { font-size: var(--font-size-base); }
-
-/* ===== LINKS ===== */
-a {
-  color: var(--color-info-600);
-  text-decoration: underline;
-  transition: all var(--transition-duration-300) var(--transition-easing-in-out);
-  font-weight: var(--font-weight-medium);
+.layout main.main-content {
+  margin-left: 150px;
+  margin-top: 64px; /* Header height */
+  min-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
 }
 
-a:hover {
-  color: var(--color-info-700);
-  text-decoration: none;
-  background-color: rgb(59 130 246 / 0.1);
-  padding: var(--spacing-0-5) var(--spacing-1);
-  border-radius: var(--border-radius);
+.layout .content-wrapper {
+  flex: 1;
+  padding: 1.5rem;
+  background-color: #f8fafc;
 }
 
-/* Links on dark backgrounds */
-.dark-bg a {
-  color: var(--link-dark-bg);
+.layout footer {
+  margin-top: auto;
 }
 
-.dark-bg a:hover {
-  color: var(--link-dark-bg-hover);
-  background-color: rgb(129 212 250 / 0.1);
+/* Header spans full width */
+.layout header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  z-index: 20;
+  background-color: white;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
-/* ===== BUTTONS ===== */
-button {
-  border-radius: var(--border-radius-xl);
-  border: none;
-  padding: var(--spacing-2-5) var(--spacing-5);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  font-family: inherit;
-  cursor: pointer;
-  transition: all var(--transition-duration-300) var(--transition-easing-in-out);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-2);
-}
-
-button:focus,
-button:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-ring-offset);
-}
-
-/* ===== FORM ELEMENTS ===== */
-input, textarea, select {
-  border-radius: var(--border-radius-lg);
-  border: var(--input-border-width) solid var(--color-primary-300);
-  padding: var(--input-padding-x);
-  font-size: var(--font-size-sm);
-  font-family: inherit;
-  transition: all var(--transition-duration-300) var(--transition-easing-in-out);
-  background: white;
-  color: var(--color-gray-900);
-  height: var(--input-height);
-}
-
-input:focus, textarea:focus, select:focus {
-  outline: none;
-  border-color: var(--color-primary-600);
-  box-shadow: 0 0 0 var(--focus-ring-offset) rgb(239 68 68 / 0.2);
-}
-
-/* ===== SCROLLBAR ===== */
-::-webkit-scrollbar {
-  width: var(--spacing-2);
-  height: var(--spacing-2);
-}
-
-::-webkit-scrollbar-track {
-  background: var(--color-primary-200);
-  border-radius: var(--border-radius);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--color-primary-700);
-  border-radius: var(--border-radius);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-primary-800);
-}
-
-/* ===== SELECTION ===== */
-::selection {
-  background: var(--color-primary-200);
-  color: var(--color-gray-900);
-}
-
-/* ===== UTILITY CLASSES ===== */
-
-/* Text alignment */
-.text-left { text-align: left; }
-.text-center { text-align: center; }
-.text-right { text-align: right; }
-
-/* Typography utilities */
-.text-pink {
-  color: var(--color-gray-900);
-  font-weight: var(--font-weight-semibold);
-}
-
-.text-accent {
-  color: var(--color-primary-900);
-  font-weight: var(--font-weight-semibold);
-}
-
-/* Background utilities */
-.bg-pink {
-  background: var(--light-pink-gradient);
-}
-
-.bg-dark {
-  background: var(--color-primary-900);
-  color: var(--text-primary-light);
-}
-
-/* Shadow utilities */
-.shadow-pink {
-  box-shadow: var(--shadow-pink);
-}
-
-/* Status text colors */
-.text-success {
-  color: var(--color-success);
-  font-weight: var(--font-weight-semibold);
-}
-
-.text-warning {
-  color: var(--color-warning);
-  font-weight: var(--font-weight-semibold);
-}
-
-.text-error {
-  color: var(--color-error);
-  font-weight: var(--font-weight-semibold);
-}
-
-.text-info {
-  color: var(--color-info);
-  font-weight: var(--font-weight-semibold);
-}
-
-/* Border radius utilities */
-.rounded {
-  border-radius: var(--border-radius-xl);
-}
-
-.rounded-full {
-  border-radius: var(--border-radius-full);
-}
-
-/* ===== RESPONSIVE HELPERS ===== */
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  :root {
-    font-size: var(--font-size-sm);
+  .layout aside {
+    left: -220px;
+    transition: left 0.3s ease;
   }
 
-  body {
-    font-size: calc(var(--font-size-sm) - 1px);
-  }
-}
-
-@media (max-width: 480px) {
-  :root {
-    font-size: calc(var(--font-size-sm) - 1px);
+  .layout.sidebar-open aside {
+    left: 0;
   }
 
-  body {
-    font-size: var(--font-size-xs);
+  .layout main.main-content {
+    margin-left: 0;
   }
 }

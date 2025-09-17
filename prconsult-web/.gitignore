@@ -1,0 +1,219 @@
+# === NODE.JS ===
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+package-lock.json  # Có thể uncomment nếu team sử dụng yarn
+yarn.lock         # Có thể uncomment nếu team sử dụng npm
+
+# === BUILD & DIST ===
+# Production build
+dist/
+dist-ssr/
+build/
+*.tsbuildinfo
+
+# === ENVIRONMENT & CONFIG ===
+# Environment variables
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.local
+
+# Config files với thông tin nhạy cảm
+config/production.json
+config/staging.json
+src/config/api-keys.js
+
+# === EDITOR & IDE ===
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# WebStorm/IntelliJ
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# === OPERATING SYSTEM ===
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# === LOGS ===
+# Application logs
+logs/
+*.log
+log/
+*.log.*
+
+# Debug logs
+debug.log
+error.log
+
+# === CACHE & TEMPORARY ===
+# Cache directories
+.cache/
+.parcel-cache/
+.vite/
+*.tsbuildinfo
+
+# Temporary folders
+tmp/
+temp/
+.tmp/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# === TESTING ===
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+.nyc_output/
+
+# Jest
+.jest/
+
+# === DATABASE ===
+# SQLite databases
+*.sqlite
+*.sqlite3
+*.db
+
+# Database dumps
+*.sql
+*.dump
+
+# === UPLOADS & MEDIA ===
+# User uploaded files (nếu có)
+uploads/
+public/uploads/
+src/assets/uploads/
+
+# Large media files
+*.mp4
+*.avi
+*.mov
+*.wmv
+*.flv
+*.webm
+
+# === BACKEND/API ===
+# Nếu có backend trong cùng repo
+api/node_modules/
+api/dist/
+api/.env
+api/logs/
+
+# === DEPLOYMENT ===
+# Docker
+Dockerfile.prod
+docker-compose.prod.yml
+.dockerignore
+
+# Vercel
+.vercel/
+
+# Netlify
+.netlify/
+
+# === DOCUMENTATION ===
+# Exclude generated docs
+docs/build/
+docs/.docusaurus/
+
+# === MISC ===
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+
+# Security files
+*.pem
+*.key
+*.crt
+*.csr
+
+# IDE workspace files
+*.code-workspace
+
+# === SPA MANAGEMENT SPECIFIC ===
+# API response cache (nếu có)
+.api-cache/
+
+# Exported customer data
+exports/
+customer-data/
+reports/
+
+# Generated certificates for development
+certs/
+
+# === KEEP CERTAIN FILES ===
+# Đảm bảo các file quan trọng không bị ignore
+!.gitkeep
+!.htaccess
+!public/.htaccess
+
+# === COMMENTS ===
+# File này được tối ưu cho dự án Spa Management System
+# Sử dụng React + Vite + Node.js
+# 
+# Để uncomment một dòng: xóa dấu # ở đầu
+# Để ignore toàn bộ folder: thêm / ở cuối
+# Để ignore file extension: sử dụng *.extension
+# 
+# Cập nhật cuối: $(date)

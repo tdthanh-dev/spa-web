@@ -4,6 +4,7 @@ import com.htttql.crmmodule.common.config.SchemaConstants;
 import com.htttql.crmmodule.common.entity.BaseEntity;
 import com.htttql.crmmodule.common.enums.InvoiceStatus;
 import com.htttql.crmmodule.core.entity.Customer;
+import com.htttql.crmmodule.core.entity.StaffUser;
 import com.htttql.crmmodule.service.entity.CustomerCase;
 import jakarta.persistence.*;
 import lombok.*;
@@ -43,19 +44,12 @@ public class Invoice extends BaseEntity {
     @JoinColumn(name = "customer_id", nullable = false, foreignKey = @ForeignKey(name = "fk_invoice_customer"))
     private Customer customer;
 
-    @Column(name = "subtotal", nullable = false, precision = 12, scale = 2)
-    private BigDecimal subtotal;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", foreignKey = @ForeignKey(name = "fk_invoice_user"))
+    private StaffUser staffUser; // User who created/collected the payment
 
-    @Column(name = "discount_total", nullable = false, precision = 12, scale = 2)
-    @Builder.Default
-    private BigDecimal discountTotal = BigDecimal.ZERO;
-
-    @Column(name = "tax_total", nullable = false, precision = 12, scale = 2)
-    @Builder.Default
-    private BigDecimal taxTotal = BigDecimal.ZERO;
-
-    @Column(name = "grand_total", nullable = false, precision = 12, scale = 2)
-    private BigDecimal grandTotal;
+    @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
+    private BigDecimal totalAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
@@ -75,20 +69,6 @@ public class Invoice extends BaseEntity {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
-    @Column(name = "promo_code", length = 50)
-    private String promoCode;
-
-    @Column(name = "promo_discount", precision = 12, scale = 2)
-    private BigDecimal promoDiscount;
-
-    @Column(name = "points_redeemed")
-    @Builder.Default
-    private Integer pointsRedeemed = 0;
-
-    @Column(name = "points_value", precision = 12, scale = 2)
-    @Builder.Default
-    private BigDecimal pointsValue = BigDecimal.ZERO;
-
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Payment> payments = new ArrayList<>();
@@ -102,36 +82,11 @@ public class Invoice extends BaseEntity {
                     LocalDateTime.now(),
                     System.currentTimeMillis() % 100000);
         }
-        calculateGrandTotal();
     }
 
     @PreUpdate
     protected void onUpdate() {
         super.onUpdate();
-        calculateGrandTotal();
-    }
-
-    private void calculateGrandTotal() {
-        if (subtotal != null) {
-            BigDecimal discount = discountTotal != null ? discountTotal : BigDecimal.ZERO;
-            BigDecimal tax = taxTotal != null ? taxTotal : BigDecimal.ZERO;
-            BigDecimal points = pointsValue != null ? pointsValue : BigDecimal.ZERO;
-
-            // Calculate: subtotal - discount + tax - pointsValue
-            grandTotal = subtotal.subtract(discount).add(tax).subtract(points);
-
-            // Ensure grandTotal is not negative
-            if (grandTotal.compareTo(BigDecimal.ZERO) < 0) {
-                // If pointsValue causes negative total, reduce pointsValue instead
-                BigDecimal maxPointsValue = subtotal.subtract(discount).add(tax);
-                if (maxPointsValue.compareTo(BigDecimal.ZERO) > 0) {
-                    pointsValue = maxPointsValue;
-                    grandTotal = BigDecimal.ZERO;
-                } else {
-                    grandTotal = BigDecimal.ZERO;
-                }
-            }
-        }
     }
 
     public BigDecimal getTotalPaid() {
@@ -141,6 +96,6 @@ public class Invoice extends BaseEntity {
     }
 
     public BigDecimal getBalanceDue() {
-        return grandTotal.subtract(getTotalPaid());
+        return totalAmount.subtract(getTotalPaid());
     }
 }

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { servicesAPI } from '@/services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { servicesAPI } from '@/services';
 import { useAuth } from '@/hooks/useAuth';
-import './ServiceList.css';
+
 
 const ServiceList = () => {
   const [services, setServices] = useState([]);
@@ -10,11 +10,7 @@ const ServiceList = () => {
   const [totalPages, setTotalPages] = useState(0);
   const { userRole } = useAuth();
 
-  useEffect(() => {
-    loadServices();
-  }, [currentPage]);
-
-  const loadServices = async () => {
+  const loadServices = useCallback(async () => {
     try {
       setLoading(true);
       const response = await servicesAPI.getAll(currentPage, 10);
@@ -26,7 +22,11 @@ const ServiceList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage]);
+
+  useEffect(() => {
+    loadServices();
+  }, [loadServices]);
 
   const handleDelete = async (serviceId) => {
     if (userRole !== 'MANAGER') {

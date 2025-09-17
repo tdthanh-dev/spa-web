@@ -1,5 +1,5 @@
 import React from 'react'
-import './SortableHeader.css'
+
 
 /**
  * Sortable Header Component
@@ -16,13 +16,12 @@ export const SortableHeader = ({
 }) => {
   const isActive = currentSort.sortBy === sortKey;
   const isAsc = isActive && currentSort.sortDir === 'asc';
-  const isDesc = isActive && currentSort.sortDir === 'desc';
 
   const handleSort = () => {
     if (disabled || !onSort) return;
 
     let newSortDir = 'asc';
-    
+
     if (isActive) {
       // If currently sorted by this column, toggle direction
       newSortDir = isAsc ? 'desc' : 'asc';
@@ -45,7 +44,7 @@ export const SortableHeader = ({
   };
 
   return (
-    <th 
+    <th
       className={`sortable-header ${className} ${isActive ? 'active' : ''} ${disabled ? 'disabled' : ''}`}
       onClick={handleSort}
       title={tooltip || (disabled ? '' : `Sắp xếp theo ${label}`)}
@@ -97,7 +96,7 @@ export const SortControl = ({
   return (
     <div className={`sort-control ${className}`}>
       <label className="sort-control-label">{label}</label>
-      
+
       <div className="sort-control-inputs">
         <select
           value={currentSort.sortBy}
@@ -130,24 +129,7 @@ export const SortControl = ({
 /**
  * Hook for managing sort state
  */
-export const useSort = (initialSort = { sortBy: '', sortDir: 'asc' }) => {
-  const [sort, setSort] = React.useState(initialSort);
-
-  const handleSort = React.useCallback((newSort) => {
-    setSort(newSort);
-  }, []);
-
-  const resetSort = React.useCallback(() => {
-    setSort(initialSort);
-  }, [initialSort]);
-
-  return {
-    sort,
-    handleSort,
-    resetSort,
-    isActive: (sortKey) => sort.sortBy === sortKey,
-    getDirection: (sortKey) => sort.sortBy === sortKey ? sort.sortDir : null
-  };
-};
+// useSort hook moved to separate file to avoid fast refresh issues
+// TODO: Create useSort.js file for better organization
 
 export default SortableHeader;

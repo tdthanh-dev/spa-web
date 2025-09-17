@@ -36,47 +36,19 @@ const RoleGuard = ({ children, requiredRoles = [], userRole, currentPath }) => {
  */
 export const ForbiddenPage = () => {
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: '60vh',
-      textAlign: 'center',
-      padding: '20px'
-    }}>
-      <div style={{
-        fontSize: '72px',
-        marginBottom: '20px'
-      }}>
+    <div className="flex flex-col items-center justify-center h-[60vh] text-center p-5">
+      <div className="text-6xl md:text-7xl mb-5">
         🚫
       </div>
-      <h1 style={{
-        color: '#dc2626',
-        marginBottom: '16px',
-        fontSize: '24px'
-      }}>
+      <h1 className="text-error-600 mb-4 text-2xl font-bold">
         Truy cập bị từ chối
       </h1>
-      <p style={{
-        color: '#6b7280',
-        marginBottom: '24px',
-        fontSize: '16px'
-      }}>
+      <p className="text-black-600 mb-6 text-base">
         Bạn không có quyền truy cập vào trang này.
       </p>
       <button 
         onClick={() => window.history.back()} 
-        style={{
-          padding: '12px 24px',
-          backgroundColor: '#3b82f6',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          fontSize: '14px',
-          fontWeight: '500'
-        }}
+        className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white border-0 rounded-lg cursor-pointer text-sm font-medium transition-colors duration-200"
       >
         ← Quay lại
       </button>

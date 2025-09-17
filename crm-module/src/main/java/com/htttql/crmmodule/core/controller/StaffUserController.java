@@ -1,6 +1,7 @@
 package com.htttql.crmmodule.core.controller;
 
 import com.htttql.crmmodule.common.dto.ApiResponse;
+import com.htttql.crmmodule.common.dto.PageResponse;
 import com.htttql.crmmodule.core.dto.StaffUserRequest;
 import com.htttql.crmmodule.core.dto.StaffUserResponse;
 import com.htttql.crmmodule.core.dto.StaffUserStatusRequest;
@@ -27,9 +28,9 @@ public class StaffUserController {
     private final IStaffUserService staffUserService;
 
     @Operation(summary = "Get all staff users with pagination")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('MANAGER')")
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<StaffUserResponse>>> getAllStaffUsers(
+    public ResponseEntity<ApiResponse<PageResponse<StaffUserResponse>>> getAllStaffUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "staffId") String sortBy,
@@ -39,11 +40,12 @@ public class StaffUserController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<StaffUserResponse> staffUsers = staffUserService.getAllStaffUsers(pageable);
-        return ResponseEntity.ok(ApiResponse.success(staffUsers, "Staff users retrieved successfully"));
+        PageResponse<StaffUserResponse> response = PageResponse.from(staffUsers);
+        return ResponseEntity.ok(ApiResponse.success(response, "Staff users retrieved successfully"));
     }
 
     @Operation(summary = "Get staff user by ID")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('MANAGER')")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<StaffUserResponse>> getStaffUserById(@PathVariable Long id) {
         StaffUserResponse staffUser = staffUserService.getStaffUserById(id);
@@ -51,7 +53,7 @@ public class StaffUserController {
     }
 
     @Operation(summary = "Create new staff user")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('MANAGER')")
     @PostMapping
     public ResponseEntity<ApiResponse<StaffUserResponse>> createStaffUser(
             @Valid @RequestBody StaffUserRequest request) {
@@ -61,7 +63,7 @@ public class StaffUserController {
     }
 
     @Operation(summary = "Update staff user")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('MANAGER')")
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<StaffUserResponse>> updateStaffUser(
             @PathVariable Long id,
@@ -71,7 +73,7 @@ public class StaffUserController {
     }
 
     @Operation(summary = "Delete staff user")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('MANAGER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteStaffUser(@PathVariable Long id) {
         staffUserService.deleteStaffUser(id);
@@ -79,7 +81,7 @@ public class StaffUserController {
     }
 
     @Operation(summary = "Update staff user status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('MANAGER')")
     @PutMapping("/{id}/status")
     public ResponseEntity<ApiResponse<StaffUserResponse>> updateStaffUserStatus(
             @PathVariable Long id,

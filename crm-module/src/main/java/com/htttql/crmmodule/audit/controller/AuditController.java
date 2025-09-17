@@ -1,6 +1,7 @@
 package com.htttql.crmmodule.audit.controller;
 
 import com.htttql.crmmodule.common.dto.ApiResponse;
+import com.htttql.crmmodule.common.dto.PageResponse;
 import com.htttql.crmmodule.audit.dto.AuditLogResponse;
 import com.htttql.crmmodule.audit.dto.TaskRequest;
 import com.htttql.crmmodule.audit.dto.TaskResponse;
@@ -42,9 +43,10 @@ public class AuditController {
     @SecurityRequirement(name = "Bearer Authentication")
     @PreAuthorize("hasRole('MANAGER')")
     @GetMapping("/logs")
-    public ResponseEntity<ApiResponse<Page<AuditLogResponse>>> getAllAuditLogs(Pageable pageable) {
+    public ResponseEntity<ApiResponse<PageResponse<AuditLogResponse>>> getAllAuditLogs(Pageable pageable) {
         Page<AuditLogResponse> logs = auditService.getAllAuditLogs(pageable);
-        return ResponseEntity.ok(ApiResponse.success(logs, "Audit logs retrieved successfully"));
+        PageResponse<AuditLogResponse> response = PageResponse.from(logs);
+        return ResponseEntity.ok(ApiResponse.success(response, "Audit logs retrieved successfully"));
     }
 
     @Operation(summary = "Get audit log by ID")
@@ -62,9 +64,10 @@ public class AuditController {
     @SecurityRequirement(name = "Bearer Authentication")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TECHNICIAN')")
     @GetMapping("/tasks")
-    public ResponseEntity<ApiResponse<Page<TaskResponse>>> getAllTasks(Pageable pageable) {
+    public ResponseEntity<ApiResponse<PageResponse<TaskResponse>>> getAllTasks(Pageable pageable) {
         Page<TaskResponse> tasks = taskService.getAllTasks(pageable);
-        return ResponseEntity.ok(ApiResponse.success(tasks, "Tasks retrieved successfully"));
+        PageResponse<TaskResponse> response = PageResponse.from(tasks);
+        return ResponseEntity.ok(ApiResponse.success(response, "Tasks retrieved successfully"));
     }
 
     @Operation(summary = "Create new task")
@@ -114,9 +117,10 @@ public class AuditController {
     @SecurityRequirement(name = "Bearer Authentication")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TECHNICIAN')")
     @GetMapping("/retouch-schedules")
-    public ResponseEntity<ApiResponse<Page<RetouchScheduleResponse>>> getAllRetouchSchedules(Pageable pageable) {
+    public ResponseEntity<ApiResponse<PageResponse<RetouchScheduleResponse>>> getAllRetouchSchedules(Pageable pageable) {
         Page<RetouchScheduleResponse> schedules = retouchScheduleService.getAllRetouchSchedules(pageable);
-        return ResponseEntity.ok(ApiResponse.success(schedules, "Retouch schedules retrieved successfully"));
+        PageResponse<RetouchScheduleResponse> response = PageResponse.from(schedules);
+        return ResponseEntity.ok(ApiResponse.success(response, "Retouch schedules retrieved successfully"));
     }
 
     @Operation(summary = "Create new retouch schedule")

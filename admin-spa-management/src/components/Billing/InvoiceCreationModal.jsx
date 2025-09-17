@@ -1,483 +1,297 @@
-import React, { useState, useEffect } from 'react';
-import { invoiceService, servicesService } from '@/services';
+// filepath: admin-spa-management/src/components/Billing/InvoiceCreationModal.jsx
+import React from 'react';
+import { useInvoiceCreation } from '@/hooks/useInvoiceCreation';
+import { useAuth } from '@/hooks/useAuth';
 import { INVOICE_STATUS_MAP } from '@/config/constants';
-import './InvoiceCreationModal.css';
 
-const InvoiceCreationModal = ({ 
-  isOpen, 
-  onClose, 
+const InvoiceCreationModal = ({
+  isOpen,
+  onClose,
   onInvoiceCreated,
   customerId,
   customerName = '',
-  caseId = null // Optional - create invoice from case
+  selectedCase = null,
 }) => {
-  const [formData, setFormData] = useState({
-    customerId: customerId || '',
-    totalAmount: 0,
-    status: 'DRAFT',
-    notes: '',
-    dueDate: '',
-    items: []
+  const { user: currentUser } = useAuth();
+
+  const {
+    formData,
+    loading,
+    error,
+    customerCases, // Add customer cases
+    casesLoading, // Add cases loading
+    handleInputChange,
+    handleSubmit,
+    handleClose,
+    formatCurrency
+  } = useInvoiceCreation({
+    customerId,
+    isOpen,
+    onClose,
+    onInvoiceCreated,
+    currentUser,
+    selectedCase
   });
-
-  const [validation, setValidation] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [services, setServices] = useState([]);
-  const [servicesLoading, setServicesLoading] = useState(false);
-
-  // Invoice item form
-  const [newItem, setNewItem] = useState({
-    serviceId: '',
-    quantity: 1,
-    unitPrice: 0
-  });
-
-  useEffect(() => {
-    if (isOpen) {
-      setFormData(prev => ({
-        ...prev,
-        customerId: customerId || ''
-      }));
-      fetchServices();
-      
-      // Set default due date (30 days from now)
-      const defaultDueDate = new Date();
-      defaultDueDate.setDate(defaultDueDate.getDate() + 30);
-      setFormData(prev => ({
-        ...prev,
-        dueDate: defaultDueDate.toISOString().split('T')[0]
-      }));
-    }
-  }, [isOpen, customerId]);
-
-  const fetchServices = async () => {
-    try {
-      setServicesLoading(true);
-      const response = await servicesService.getActive();
-      setServices(response?.content || []);
-    } catch (err) {
-      console.error('Error fetching services:', err);
-      setError('Không thể tải danh sách dịch vụ');
-    } finally {
-      setServicesLoading(false);
-    }
-  };
-
-  const validateField = (name, value) => {
-    const errors = {};
-    
-    switch (name) {
-      case 'customerId':
-        if (!value) {
-          errors.customerId = 'Customer ID là bắt buộc';
-        }
-        break;
-      
-      case 'totalAmount':
-        if (!value || value <= 0) {
-          errors.totalAmount = 'Tổng tiền phải lớn hơn 0';
-        }
-        break;
-      
-    }
-    
-    return errors;
-  };
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-
-    // Validate field
-    const fieldErrors = validateField(field, value);
-    setValidation(prev => ({
-      ...prev,
-      ...fieldErrors,
-      [field]: fieldErrors[field] ? fieldErrors[field] : undefined
-    }));
-  };
-
-  const handleNewItemChange = (field, value) => {
-    setNewItem(prev => {
-      const updated = { ...prev, [field]: value };
-      
-      // Auto-update unit price when service is selected
-      if (field === 'serviceId' && value) {
-        const selectedService = services.find(s => s.serviceId.toString() === value);
-        if (selectedService) {
-          updated.unitPrice = selectedService.price;
-        }
-      }
-      
-      return updated;
-    });
-  };
-
-  const addInvoiceItem = () => {
-    if (!newItem.serviceId || newItem.quantity <= 0 || newItem.unitPrice <= 0) {
-      setError('Vui lòng điền đầy đủ thông tin item');
-      return;
-    }
-
-    const selectedService = services.find(s => s.serviceId.toString() === newItem.serviceId);
-    if (!selectedService) {
-      setError('Dịch vụ không hợp lệ');
-      return;
-    }
-
-    const item = {
-      serviceId: parseInt(newItem.serviceId),
-      serviceName: selectedService.name,
-      quantity: parseInt(newItem.quantity),
-      unitPrice: parseFloat(newItem.unitPrice),
-      totalPrice: parseInt(newItem.quantity) * parseFloat(newItem.unitPrice)
-    };
-
-    const updatedItems = [...formData.items, item];
-    const newTotalAmount = updatedItems.reduce((sum, item) => sum + item.totalPrice, 0);
-
-    setFormData(prev => ({
-      ...prev,
-      items: updatedItems,
-      totalAmount: newTotalAmount
-    }));
-
-    // Reset new item form
-    setNewItem({
-      serviceId: '',
-      quantity: 1,
-      unitPrice: 0
-    });
-
-    setError(null);
-  };
-
-  const removeInvoiceItem = (index) => {
-    const updatedItems = formData.items.filter((_, i) => i !== index);
-    const newTotalAmount = updatedItems.reduce((sum, item) => sum + item.totalPrice, 0);
-
-    setFormData(prev => ({
-      ...prev,
-      items: updatedItems,
-      totalAmount: newTotalAmount
-    }));
-  };
-
-  const validateForm = () => {
-    const errors = {};
-    
-    // Basic validation
-    Object.keys(formData).forEach(field => {
-      if (field !== 'items') {
-        const fieldErrors = validateField(field, formData[field]);
-        Object.assign(errors, fieldErrors);
-      }
-    });
-
-    // Items validation
-    if (formData.items.length === 0) {
-      errors.items = 'Phải có ít nhất một item trong hóa đơn';
-    }
-
-    setValidation(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      setError('Vui lòng sửa các lỗi trong form');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      console.log('Creating invoice with data:', formData);
-
-      // Format data for API (simplified to match backend expectations)
-      const apiData = {
-        customerId: parseInt(formData.customerId),
-        totalAmount: parseFloat(formData.totalAmount),
-        status: formData.status,
-        notes: formData.notes?.trim() || null,
-        dueDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : null
-      };
-
-      const response = await invoiceService.create(apiData);
-      
-      console.log('Invoice created successfully:', response);
-
-      if (onInvoiceCreated) {
-        onInvoiceCreated(response);
-      }
-
-      // Reset form
-      setFormData({
-        customerId: customerId || '',
-        totalAmount: 0,
-        status: 'DRAFT',
-        notes: '',
-        dueDate: '',
-        items: []
-      });
-
-      onClose();
-
-    } catch (err) {
-      console.error('Error creating invoice:', err);
-      
-      let errorMessage = 'Không thể tạo hóa đơn';
-      
-      if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.response?.data?.error) {
-        errorMessage = err.response.data.error;
-      } else if (err.response?.status === 400) {
-        errorMessage = 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.';
-      }
-      
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleClose = () => {
-    if (!loading) {
-      setFormData({
-        customerId: customerId || '',
-        totalAmount: 0,
-        status: 'DRAFT',
-        notes: '',
-        dueDate: '',
-        items: []
-      });
-      setNewItem({
-        serviceId: '',
-        quantity: 1,
-        unitPrice: 0
-      });
-      setValidation({});
-      setError(null);
-      onClose();
-    }
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount);
-  };
 
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay invoice-creation-modal" onClick={handleClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>💰 Tạo hóa đơn mới</h2>
-          <button 
-            className="close-button" 
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      onClick={handleClose}
+    >
+      <div
+        className="w-full max-w-5xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50/80">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <span className="text-2xl">💰</span>
+            Tạo hóa đơn mới
+          </h2>
+          <button
+            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
             onClick={handleClose}
             disabled={loading}
+            aria-label="Đóng"
+            title="Đóng"
           >
-            ×
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="modal-body">
+        {/* Body */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+          {/* Error banner */}
           {error && (
-            <div className="error-message">
-              <span className="error-icon">⚠️</span>
-              {error}
+            <div className="p-4 rounded-lg border border-red-200 bg-red-50 text-red-800 flex items-start gap-2">
+              <span className="text-red-500">⚠️</span>
+              <span className="text-sm">{error}</span>
             </div>
           )}
 
-          {/* Customer Info */}
-          <div className="customer-info-section">
-            <h3>👤 Thông tin khách hàng</h3>
-            <div className="customer-display">
-              <span className="customer-name">{customerName || `Customer #${customerId}`}</span>
-              <span className="customer-id">ID: {customerId}</span>
+          {/* Customer info */}
+          <div className="rounded-xl border border-gray-200 bg-gray-50/60 px-4 py-3">
+            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+              <span className="text-lg">👤</span>
+              Thông tin khách hàng
+            </h3>
+            <div className="mt-2 flex items-center gap-3 text-sm">
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-pink-50 text-pink-700 font-medium">
+                {customerName || `Customer #${customerId}`}
+              </span>
+              <span className="text-gray-500">ID: {customerId}</span>
             </div>
           </div>
 
-          <div className="form-grid">
-            {/* Invoice Details */}
-            <div className="form-section">
-              <h3>📋 Chi tiết hóa đơn</h3>
-              
+          {/* Current user info */}
+          <div className="rounded-xl border border-gray-200 bg-blue-50/60 px-4 py-3">
+            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+              <span className="text-lg">👨‍💼</span>
+              Nhân viên thu tiền
+            </h3>
+            <div className="mt-2 flex items-center gap-3 text-sm">
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-medium">
+                {currentUser?.fullName || 'Unknown User'}
+              </span>
+              <span className="text-gray-500">ID: {currentUser?.staffId || currentUser?.userId}</span>
+            </div>
+          </div>
 
-              <div className="form-group">
-                <label htmlFor="status">
-                  Trạng thái
+          {/* Case selection */}
+          <div className="rounded-xl border border-gray-200 bg-blue-50/60 px-4 py-3">
+            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <span className="text-lg">🩺</span>
+              Liên kết với hồ sơ điều trị {selectedCase ? '(đã chọn)' : '(tùy chọn)'}
+            </h3>
+            {selectedCase ? (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900">{selectedCase.primaryServiceName}</p>
+                    <p className="text-sm text-gray-600">
+                      Trạng thái: {selectedCase.status} | Thanh toán: {
+                        selectedCase.paidStatus === 'UNPAID' ? 'Chưa thanh toán' :
+                        selectedCase.paidStatus === 'PARTIALLY_PAID' ? 'Thanh toán một phần' :
+                        selectedCase.paidStatus === 'FULLY_PAID' ? 'Đã thanh toán' :
+                        selectedCase.paidStatus
+                      }
+                    </p>
+                    <p className="text-sm font-medium text-blue-700">
+                      Tổng tiền: {formatCurrency(selectedCase.totalAmount || 0)}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800">
+                    Đã chọn
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <label htmlFor="caseId" className="text-sm font-medium text-gray-700">
+                  Chọn hồ sơ điều trị
                 </label>
                 <select
-                  id="status"
-                  value={formData.status}
-                  onChange={(e) => handleInputChange('status', e.target.value)}
-                  disabled={loading}
+                  id="caseId"
+                  value={formData.caseId}
+                  onChange={(e) => handleInputChange('caseId', e.target.value)}
+                  disabled={loading || casesLoading}
+                  className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  {Object.keys(INVOICE_STATUS_MAP).map(status => (
-                    <option key={status} value={status}>
-                      {INVOICE_STATUS_MAP[status].label}
+                  <option value="">-- Không liên kết với hồ sơ nào --</option>
+                  {customerCases.map((caseItem) => (
+                    <option key={caseItem.caseId} value={caseItem.caseId}>
+                      {caseItem.primaryServiceName} - {caseItem.status} ({new Date(caseItem.startDate).toLocaleDateString('vi-VN')})
+                      {caseItem.totalAmount > 0 && ` - ${formatCurrency(caseItem.totalAmount)}`}
                     </option>
                   ))}
                 </select>
+                {casesLoading && (
+                  <p className="text-xs text-gray-500">Đang tải danh sách hồ sơ...</p>
+                )}
+                {!casesLoading && customerCases.length === 0 && (
+                  <p className="text-xs text-amber-600">Khách hàng chưa có hồ sơ điều trị nào</p>
+                )}
               </div>
+            )}
+          </div>
 
-              <div className="form-group">
-                <label htmlFor="dueDate">
-                  📅 Hạn thanh toán
-                </label>
-                <input
-                  id="dueDate"
-                  type="date"
-                  value={formData.dueDate}
-                  onChange={(e) => handleInputChange('dueDate', e.target.value)}
-                  disabled={loading}
-                  min={new Date().toISOString().split('T')[0]}
-                />
-              </div>
+          {/* Grid: Details + Amount */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* Invoice details */}
+            <div className="rounded-xl border border-gray-200 p-5">
+              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="text-lg">📋</span>
+                Chi tiết hóa đơn
+              </h3>
 
-              <div className="form-group">
-                <label htmlFor="notes">
-                  📝 Ghi chú
-                </label>
-                <textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
-                  placeholder="Nhập ghi chú về hóa đơn..."
-                  rows="3"
-                  disabled={loading}
-                />
+              <div className="space-y-4">
+                {/* Status */}
+                <div className="space-y-1.5">
+                  <label htmlFor="status" className="text-sm font-medium text-gray-700">
+                    Trạng thái
+                  </label>
+                  <select
+                    id="status"
+                    value={formData.status}
+                    onChange={(e) => handleInputChange('status', e.target.value)}
+                    disabled={loading}
+                    className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  >
+                    {Object.keys(INVOICE_STATUS_MAP).map((st) => (
+                      <option key={st} value={st}>
+                        {INVOICE_STATUS_MAP[st].label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Due date */}
+                <div className="space-y-1.5">
+                  <label htmlFor="dueDate" className="text-sm font-medium text-gray-700">
+                    📅 Hạn thanh toán
+                  </label>
+                  <input
+                    id="dueDate"
+                    type="date"
+                    value={formData.dueDate}
+                    onChange={(e) => handleInputChange('dueDate', e.target.value)}
+                    disabled={loading}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Notes */}
+                <div className="space-y-1.5">
+                  <label htmlFor="notes" className="text-sm font-medium text-gray-700">
+                    📝 Ghi chú
+                  </label>
+                  <textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => handleInputChange('notes', e.target.value)}
+                    placeholder="Nhập ghi chú về hóa đơn..."
+                    rows={4}
+                    disabled={loading}
+                    className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Invoice Items */}
-            <div className="form-section">
-              <h3>🛍️ Dịch vụ</h3>
-              
-              {/* Add Item Form */}
-              <div className="add-item-form">
-                <div className="form-group">
-                  <label>Chọn dịch vụ</label>
-                  {servicesLoading ? (
-                    <div className="loading-select">Đang tải dịch vụ...</div>
-                  ) : (
-                    <select
-                      value={newItem.serviceId}
-                      onChange={(e) => handleNewItemChange('serviceId', e.target.value)}
-                      disabled={loading}
-                    >
-                      <option value="">-- Chọn dịch vụ --</option>
-                      {services.map(service => (
-                        <option key={service.serviceId} value={service.serviceId}>
-                          {service.name} - {formatCurrency(service.price)}
-                        </option>
-                      ))}
-                    </select>
+            {/* Total amount */}
+            <div className="rounded-xl border border-gray-200 p-5">
+              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="text-lg">💰</span>
+                Tổng tiền
+              </h3>
+
+              {/* Total amount input */}
+              <div className="rounded-lg bg-gray-50/70 border border-gray-200 p-4 space-y-4">
+                <div className="space-y-1.5">
+                  <label htmlFor="totalAmount" className="text-sm font-medium text-gray-700">
+                    Tổng tiền hóa đơn (VNĐ)
+                    {selectedCase && (
+                      <span className="ml-2 text-xs text-blue-600 font-normal">
+                        (Tự động từ hồ sơ điều trị)
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    id="totalAmount"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={formData.totalAmount}
+                    onChange={(e) => handleInputChange('totalAmount', e.target.value)}
+                    placeholder={selectedCase ? "Tự động từ hồ sơ" : "Nhập tổng tiền..."}
+                    disabled={loading || !!selectedCase} // Disable if case is selected
+                    className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  />
+                  {selectedCase && (
+                    <p className="text-xs text-gray-600">
+                      Tổng tiền được tính tự động từ các dịch vụ trong hồ sơ điều trị đã chọn.
+                    </p>
                   )}
                 </div>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Số lượng</label>
-                    <input
-                      type="number"
-                      value={newItem.quantity}
-                      onChange={(e) => handleNewItemChange('quantity', e.target.value)}
-                      min="1"
-                      disabled={loading}
-                    />
+                {/* Display formatted amount */}
+                {formData.totalAmount > 0 && (
+                  <div className="text-center py-2">
+                    <span className="text-lg font-bold text-gray-900">{formatCurrency(formData.totalAmount)}</span>
                   </div>
-
-                  <div className="form-group">
-                    <label>Đơn giá</label>
-                    <input
-                      type="number"
-                      value={newItem.unitPrice}
-                      onChange={(e) => handleNewItemChange('unitPrice', e.target.value)}
-                      min="0"
-                      step="1000"
-                      disabled={loading}
-                    />
-                  </div>
-                </div>
-
-                <button 
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={addInvoiceItem}
-                  disabled={loading || !newItem.serviceId}
-                >
-                  ➕ Thêm dịch vụ
-                </button>
-              </div>
-
-              {/* Items List */}
-              <div className="items-list">
-                {formData.items.length === 0 ? (
-                  <div className="no-items">
-                    <p>Chưa có dịch vụ nào được thêm</p>
-                  </div>
-                ) : (
-                  formData.items.map((item, index) => (
-                    <div key={index} className="item-card">
-                      <div className="item-info">
-                        <h4>{item.serviceName}</h4>
-                        <p>Số lượng: {item.quantity} × {formatCurrency(item.unitPrice)}</p>
-                      </div>
-                      <div className="item-actions">
-                        <span className="item-total">{formatCurrency(item.totalPrice)}</span>
-                        <button 
-                          type="button"
-                          className="remove-btn"
-                          onClick={() => removeInvoiceItem(index)}
-                          disabled={loading}
-                        >
-                          ❌
-                        </button>
-                      </div>
-                    </div>
-                  ))
                 )}
-              </div>
-
-              {/* Total */}
-              <div className="invoice-total">
-                <strong>Tổng cộng: {formatCurrency(formData.totalAmount)}</strong>
               </div>
             </div>
           </div>
         </form>
 
-        <div className="modal-footer">
-          <button 
-            type="button" 
-            className="btn btn-secondary" 
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50/80 flex items-center justify-end gap-2">
+          <button
+            type="button"
             onClick={handleClose}
             disabled={loading}
+            className="px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
           >
             Hủy
           </button>
-          <button 
-            type="submit" 
-            className="btn btn-primary"
+          <button
+            type="submit"
             onClick={handleSubmit}
-            disabled={loading || !formData.customerId || formData.items.length === 0}
+            disabled={loading || !formData.customerId || (!selectedCase && formData.totalAmount <= 0)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-pink-600 text-white hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
-                <span className="loading-spinner"></span>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
                 Đang tạo...
               </>
             ) : (

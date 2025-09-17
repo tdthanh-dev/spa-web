@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Service for OTP generation and validation
@@ -109,10 +108,6 @@ public class OtpService {
 
     private String generateOtp() {
         return String.format("%06d", random.nextInt(999999));
-    }
-
-    private boolean isEmail(String username) {
-        return username.contains("@");
     }
 
     /**

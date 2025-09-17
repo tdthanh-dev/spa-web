@@ -52,10 +52,6 @@ public class StaffUser extends BaseEntity {
     @JoinColumn(name = "role_id", nullable = false, foreignKey = @ForeignKey(name = "fk_staff_role"))
     private Role role;
 
-    @OneToMany(mappedBy = "staffUser", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @Builder.Default
-    private Set<UserPermission> userPermissions = new HashSet<>();
-
     @Column(name = "last_login_at", columnDefinition = "TIMESTAMPTZ")
     private LocalDateTime lastLoginAt;
 

@@ -1,6 +1,7 @@
 package com.htttql.crmmodule.core.controller;
 
 import com.htttql.crmmodule.common.dto.ApiResponse;
+import com.htttql.crmmodule.common.dto.PageResponse;
 import com.htttql.crmmodule.core.dto.TierRequest;
 import com.htttql.crmmodule.core.dto.TierResponse;
 import com.htttql.crmmodule.core.service.ITierService;
@@ -32,9 +33,10 @@ public class TierController {
     @SecurityRequirement(name = "Bearer Authentication")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<TierResponse>>> getAllTiers(Pageable pageable) {
+    public ResponseEntity<ApiResponse<PageResponse<TierResponse>>> getAllTiers(Pageable pageable) {
         Page<TierResponse> tiers = tierService.getAllTiers(pageable);
-        return ResponseEntity.ok(ApiResponse.success(tiers, "Tiers retrieved successfully"));
+        PageResponse<TierResponse> response = PageResponse.from(tiers);
+        return ResponseEntity.ok(ApiResponse.success(response, "Tiers retrieved successfully"));
     }
 
     @Operation(summary = "Get tier by ID")
