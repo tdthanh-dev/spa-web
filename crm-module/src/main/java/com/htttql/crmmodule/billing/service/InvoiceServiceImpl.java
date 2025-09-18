@@ -32,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -344,5 +345,21 @@ public class InvoiceServiceImpl implements IInvoiceService {
             log.error("Failed to create payment for invoice {}", invoice.getInvoiceId(), e);
             // Don't fail the invoice creation if payment creation fails
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<InvoiceResponse> getInvoicesByCustomerId(Long customerId) {
+        // Validate customer exists
+        customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", customerId));
+
+        // Get all invoices for the customer
+        List<Invoice> invoices = invoiceRepository.findByCustomer_CustomerId(customerId);
+
+        // Convert to response DTOs
+        return invoices.stream()
+                .map(this::toResponse)
+                .toList();
     }
 }

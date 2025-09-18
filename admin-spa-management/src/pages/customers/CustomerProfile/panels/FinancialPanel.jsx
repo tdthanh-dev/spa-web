@@ -96,42 +96,116 @@ export default function FinancialPanel({
 
       {/* List */}
       <div className="space-y-3">
-        {items.map((tr) => {
-          const isInvoice = tr?.type === "INVOICE";
-          const amountPrefix = isInvoice ? "-" : "+";
-          const amountClass = isInvoice ? "text-red-600" : "text-emerald-600";
+        {items.map((invoice) => {
+          const isPaid = invoice?.paid === true || invoice?.status === "PAID";
+          const hasBalanceDue = invoice?.balanceDue > 0;
+          const isOverdue = invoice?.overdue === true;
 
           return (
             <div
-              key={tr?.id ?? `${tr?.type}-${tr?.date}-${tr?.amount}`}
+              key={invoice?.invoiceId ?? `invoice-${invoice?.createdAt}`}
               className="flex items-start justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
             >
-              <div className="min-w-0 space-y-1">
+              <div className="min-w-0 flex-1 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-lg">{isInvoice ? "📄" : "💳"}</span>
+                  <span className="text-lg">📄</span>
                   <h4 className="truncate font-semibold text-gray-900">
-                    {tr?.description || (isInvoice ? "Hóa đơn" : "Thanh toán")}
+                    {invoice?.invoiceNumber || `Hóa đơn #${invoice?.invoiceId}`}
                   </h4>
-                  {renderStatusBadge(getStatusBadge, tr?.type, tr?.status)}
+                  {renderStatusBadge(getStatusBadge, "INVOICE", invoice?.status)}
+                  {isOverdue && (
+                    <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
+                      Quá hạn
+                    </span>
+                  )}
                 </div>
 
-                <p className="text-sm text-gray-600">
-                  <strong>Ngày:</strong>{" "}
-                  {typeof formatDateTimeVN === "function"
-                    ? formatDateTimeVN(tr?.date)
-                    : tr?.date || "—"}
-                </p>
-
-                {!!tr?.pointsEarned && (
-                  <p className="text-sm text-gray-600">
-                    <strong>Điểm được:</strong> +{tr.pointsEarned} điểm
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600">
+                  <p>
+                    <strong>Ngày tạo:</strong>{" "}
+                    {typeof formatDateTimeVN === "function"
+                      ? formatDateTimeVN(invoice?.createdAt)
+                      : invoice?.createdAt || "—"}
                   </p>
-                )}
+
+                  <p>
+                    <strong>Hạn thanh toán:</strong>{" "}
+                    {typeof formatDateTimeVN === "function"
+                      ? formatDateTimeVN(invoice?.dueDate)
+                      : invoice?.dueDate || "—"}
+                  </p>
+
+                  <p>
+                    <strong>Dịch vụ:</strong> {invoice?.caseId ? `Hồ sơ #${invoice?.caseId}` : "—"}
+                  </p>
+
+                  <p>
+                    <strong>Nhân viên:</strong> {invoice?.userName || "—"}
+                  </p>
+                </div>
+
+                {/* Payment Information */}
+                <div className="flex flex-wrap gap-4 text-sm">
+                  <div className="flex items-center gap-1">
+                    <span className="font-medium text-gray-700">Tổng tiền:</span>
+                    <span className="text-gray-900">
+                      {typeof formatCurrency === "function"
+                        ? formatCurrency(invoice?.totalAmount)
+                        : invoice?.totalAmount ?? 0}
+                    </span>
+                  </div>
+
+                  {invoice?.totalPaid > 0 && (
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium text-emerald-700">Đã thanh toán:</span>
+                      <span className="text-emerald-700">
+                        {typeof formatCurrency === "function"
+                          ? formatCurrency(invoice?.totalPaid)
+                          : invoice?.totalPaid}
+                      </span>
+                    </div>
+                  )}
+
+                  {hasBalanceDue && (
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium text-red-700">Còn nợ:</span>
+                      <span className="text-red-700">
+                        {typeof formatCurrency === "function"
+                          ? formatCurrency(invoice?.balanceDue)
+                          : invoice?.balanceDue}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Payment Status */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-700">Trạng thái:</span>
+                  <span className={`text-sm font-medium ${
+                    isPaid ? 'text-emerald-700' :
+                    hasBalanceDue ? 'text-orange-700' : 'text-gray-700'
+                  }`}>
+                    {invoice?.paymentStatus || invoice?.displayStatus || invoice?.status}
+                  </span>
+                </div>
               </div>
 
-              <div className={`ml-4 whitespace-nowrap text-right text-base font-semibold ${amountClass}`}>
-                {amountPrefix}
-                {typeof formatCurrency === "function" ? formatCurrency(tr?.amount) : tr?.amount ?? 0}
+              <div className="ml-4 whitespace-nowrap text-right">
+                <div className={`text-lg font-semibold ${
+                  isPaid ? 'text-emerald-600' :
+                  hasBalanceDue ? 'text-red-600' : 'text-gray-600'
+                }`}>
+                  {typeof formatCurrency === "function"
+                    ? formatCurrency(invoice?.totalAmount)
+                    : invoice?.totalAmount ?? 0}
+                </div>
+                {hasBalanceDue && (
+                  <div className="text-sm text-red-600 font-medium">
+                    Còn nợ: {typeof formatCurrency === "function"
+                      ? formatCurrency(invoice?.balanceDue)
+                      : invoice?.balanceDue}
+                  </div>
+                )}
               </div>
             </div>
           );

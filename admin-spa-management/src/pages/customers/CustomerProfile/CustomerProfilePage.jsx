@@ -40,6 +40,7 @@ export default function CustomerProfilePage({ userRole, customerId: customerIdPr
     () =>
       (tabData.treatments || []).map((t) => ({
         id: t.caseId || t.id,
+        caseId: t.caseId, // ✅ giữ nguyên caseId để truyền cho InvoiceCreationModal
         serviceName: t.primaryServiceName || t.serviceName,
         status: t.status,
         paidStatus: t.paidStatus,
@@ -49,9 +50,14 @@ export default function CustomerProfilePage({ userRole, customerId: customerIdPr
         totalCost: t.totalAmount, // API returns totalAmount, not totalCost
         totalAmount: t.totalAmount, // Direct from API
         amountPaid: t.amountPaid || 0,
-        remainingAmount: t.paidStatus === 'FULLY_PAID' ? 0 :
-                        t.paidStatus === 'UNPAID' ? (t.totalAmount || 0) :
-                        t.paidStatus === 'PARTIALLY_PAID' ? (t.totalAmount || 0) : (t.totalAmount || 0),
+        remainingAmount:
+          t.paidStatus === "FULLY_PAID"
+            ? 0
+            : t.paidStatus === "UNPAID"
+            ? t.totalAmount || 0
+            : t.paidStatus === "PARTIALLY_PAID"
+            ? t.totalAmount || 0
+            : t.totalAmount || 0,
       })),
     [tabData.treatments]
   );

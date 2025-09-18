@@ -53,33 +53,29 @@ export const customersApi = {
     const {
       page = 0,
       size = 20,
-      sortBy = 'invoiceId',
+      sortBy = 'createdAt',
       sortDir = 'desc'
     } = params
 
     try {
-      // Workaround: Get all invoices and filter by customerId on frontend
-      // TODO: Backend should add endpoint GET /api/invoices/customer/{customerId}
-      const response = await apiClient.get(API_ENDPOINTS.INVOICES, {
-        params: { page: 0, size: 100, sortBy, sortDir } // Get more to filter
+      // Use the new dedicated endpoint for customer invoices
+      const response = await apiClient.get(`${API_ENDPOINTS.INVOICES}/customer/${customerId}`, {
+        params: { page, size, sort: `${sortBy},${sortDir}` }
       })
-      
-      const allInvoices = extractApiResponse(response)
-      
-      // Filter by customerId on frontend (not ideal but works)
-      const customerInvoices = allInvoices.content.filter(invoice => 
-        invoice.customerId === parseInt(customerId)
-      )
-      
-      // Return in pagination format
+
+      const invoices = extractApiResponse(response)
+
+      // Convert to pagination format for consistency with existing code
       return {
-        content: customerInvoices.slice(page * size, (page + 1) * size),
-        totalElements: customerInvoices.length,
-        totalPages: Math.ceil(customerInvoices.length / size),
+        content: Array.isArray(invoices) ? invoices.slice(page * size, (page + 1) * size) : [],
+        totalElements: Array.isArray(invoices) ? invoices.length : 0,
+        totalPages: Math.ceil((Array.isArray(invoices) ? invoices.length : 0) / size),
         size,
         number: page,
         first: page === 0,
-        last: page >= Math.ceil(customerInvoices.length / size) - 1
+        last: page >= Math.ceil((Array.isArray(invoices) ? invoices.length : 0) / size) - 1,
+        numberOfElements: Array.isArray(invoices) ? invoices.slice(page * size, (page + 1) * size).length : 0,
+        empty: !Array.isArray(invoices) || invoices.length === 0
       }
     } catch (error) {
       console.warn('Failed to load financial data:', error)
@@ -90,7 +86,9 @@ export const customersApi = {
         size,
         number: page,
         first: page === 0,
-        last: true
+        last: true,
+        numberOfElements: 0,
+        empty: true
       }
     }
   },

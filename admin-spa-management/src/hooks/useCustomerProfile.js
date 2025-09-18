@@ -115,7 +115,7 @@ export function useCustomerProfile(userRole, customerIdFromRoute) {
   const loadFinancial = useCallback(async (cid) => {
     setTabLoading((s) => ({ ...s, financial: true }));
     try {
-      const data = await customersApi.getFinancial(cid);
+      const data = await customersApi.getFinancial(cid, { sortBy: 'createdAt', sortDir: 'desc' });
       // getFinancial returns pagination format, so we need to extract content
       setTabData((prev) => ({ ...prev, financial: data.content || [] }));
     } finally {

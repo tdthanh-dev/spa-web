@@ -6,6 +6,8 @@ import com.htttql.crmmodule.billing.dto.InvoiceStatusRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+
 public interface IInvoiceService {
 
     Page<InvoiceResponse> getAllInvoices(Pageable pageable);
@@ -19,4 +21,11 @@ public interface IInvoiceService {
     void deleteInvoice(Long id);
 
     InvoiceResponse updateInvoiceStatus(Long id, InvoiceStatusRequest request);
+
+    /**
+     * Lấy danh sách hóa đơn theo ID khách hàng
+     * @param customerId ID của khách hàng
+     * @return Danh sách InvoiceResponse
+     */
+    List<InvoiceResponse> getInvoicesByCustomerId(Long customerId);
 }

@@ -1,12 +1,25 @@
 import { useState, useEffect } from 'react';
 import { invoiceService, customerCaseService } from '@/services';
-import { INVOICE_STATUS_MAP } from '@/config/constants';
 
-/**
- * Custom         userId: currentUser?.staffId || currentUser?.userId || currentUser?.id || '',ook for Invoice Creation Modal logic
- * Handles form state, validation, API calls, and business logic
- */
-export const useInvoiceCreation = ({ customerId, isOpen, onClose, onInvoiceCreated, currentUser, selectedCase }) => {
+// Tránh lệch múi giờ khi dùng <input type="date">
+const toMiddayISO = (yyyyMmDd) => {
+  if (!yyyyMmDd) return null;
+  const d = new Date(yyyyMmDd);
+  d.setHours(12, 0, 0, 0);
+  return d.toISOString();
+};
+
+// Các trạng thái hợp lệ theo BE
+export const BE_ALLOWED_STATUSES = ['DRAFT', 'UNPAID', 'PAID', 'VOID'];
+
+export const useInvoiceCreation = ({
+  customerId,
+  isOpen,
+  onClose,
+  onInvoiceCreated,
+  currentUser,
+  selectedCase
+}) => {
   // Form state
   const [formData, setFormData] = useState({
     customerId: customerId || '',
@@ -21,97 +34,104 @@ export const useInvoiceCreation = ({ customerId, isOpen, onClose, onInvoiceCreat
   // UI state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [customerCases, setCustomerCases] = useState([]); // New state for customer cases
-  const [casesLoading, setCasesLoading] = useState(false); // New state for cases loading
+  const [customerCases, setCustomerCases] = useState([]);
+  const [casesLoading, setCasesLoading] = useState(false);
 
-  // Reset form when modal opens
+  // Reset form khi mở modal
   useEffect(() => {
-    if (isOpen) {
-      console.log('Current user in invoice creation:', currentUser);
-      console.log('Setting userId to:', currentUser?.staffId || currentUser?.userId || currentUser?.id || '');
-      setFormData(prev => ({
-        ...prev,
-        customerId: customerId || '',
-        caseId: selectedCase ? selectedCase.caseId : '',
-        userId: String(currentUser?.staffId || currentUser?.userId || currentUser?.id || ''),
-        totalAmount: selectedCase ? (selectedCase.remainingAmount || selectedCase.totalAmount || selectedCase.totalCost || 0) : 0 // Auto-set from case
-      }));
-      fetchCustomerCases(); // Load customer cases
+    if (!isOpen) return;
 
-      // Set default due date (30 days from now)
-      const defaultDueDate = new Date();
-      defaultDueDate.setDate(defaultDueDate.getDate() + 30);
-      setFormData(prev => ({
-        ...prev,
-        dueDate: defaultDueDate.toISOString().split('T')[0]
-      }));
-    }
+    fetchCustomerCases();
+
+    const computedUserId =
+      currentUser?.staffId || currentUser?.userId || currentUser?.id || '';
+
+    const initialCaseId = selectedCase ? selectedCase.caseId : '';
+    const initialTotal =
+      selectedCase
+        ? (selectedCase.remainingAmount ||
+           selectedCase.totalAmount ||
+           selectedCase.totalCost || 0)
+        : 0;
+
+    const defaultDue = new Date();
+    defaultDue.setDate(defaultDue.getDate() + 30);
+    const defaultDueYmd = defaultDue.toISOString().split('T')[0];
+
+    setFormData(prev => ({
+      ...prev,
+      customerId: customerId || '',
+      caseId: initialCaseId,
+      userId: computedUserId,
+      totalAmount: initialTotal,
+      status: 'DRAFT',
+      notes: '',
+      dueDate: defaultDueYmd
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, customerId, selectedCase, currentUser]);
 
-  // API functions
+  // API: lấy danh sách hồ sơ
   const fetchCustomerCases = async () => {
     if (!customerId) return;
-
     try {
       setCasesLoading(true);
       const response = await customerCaseService.getByCustomerId(customerId);
-      console.log('Loaded customer cases:', response?.content || []);
       setCustomerCases(response?.content || []);
     } catch (err) {
-      console.error('Error fetching customer cases:', err);
+      console.error('❌ Error fetching customer cases:', err);
       setError('Không thể tải danh sách hồ sơ điều trị');
     } finally {
       setCasesLoading(false);
     }
   };
 
-  // Validation functions
+  // Validate field
   const validateField = (name, value) => {
     const errors = {};
-
     switch (name) {
       case 'customerId':
-        if (!value) {
-          errors.customerId = 'Customer ID là bắt buộc';
-        }
+        if (!value) errors.customerId = 'Customer ID là bắt buộc';
         break;
-
       case 'caseId':
         if (!value) {
           errors.caseId = 'Case ID là bắt buộc';
         } else {
-          // Check if case exists in loaded cases
-          const caseExists = customerCases.some(c => c.caseId.toString() === value.toString());
-          if (!caseExists) {
-            errors.caseId = 'Case không tồn tại';
-          }
+          const exists = customerCases.some(c => c.caseId?.toString() === value?.toString());
+          if (!exists) errors.caseId = 'Case không tồn tại';
         }
         break;
-
+      case 'status':
+        if (!BE_ALLOWED_STATUSES.includes(value)) {
+          errors.status = 'Trạng thái không hợp lệ';
+        }
+        break;
       case 'totalAmount':
-        // Only require totalAmount if no case is selected
-        if (!selectedCase && (!value || value <= 0)) {
+        if (!value || Number(value) <= 0) {
           errors.totalAmount = 'Tổng tiền phải lớn hơn 0';
         }
         break;
+      default:
+        break;
     }
-
     return errors;
   };
 
   const validateForm = () => {
     const errors = {};
-
-    // Basic validation
     Object.keys(formData).forEach(field => {
       const fieldErrors = validateField(field, formData[field]);
       Object.assign(errors, fieldErrors);
     });
-
-    return Object.keys(errors).length === 0;
+    if (Object.keys(errors).length) {
+      setError('Vui lòng sửa các lỗi trong form');
+      return false;
+    }
+    setError(null);
+    return true;
   };
 
-  // Event handlers
+  // Handlers
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -120,57 +140,42 @@ export const useInvoiceCreation = ({ customerId, isOpen, onClose, onInvoiceCreat
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault?.();
 
-    if (!validateForm()) {
-      setError('Vui lòng sửa các lỗi trong form');
-      return;
-    }
+    console.log("📝 FormData trước khi gửi:", formData);
+
+    if (!validateForm()) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      console.log('Creating invoice with data:', formData);
-
-      // Format data for API (simplified to match backend expectations)
+      const rawUserId = formData.userId;
       const apiData = {
         customerId: parseInt(formData.customerId),
-        caseId: formData.caseId ? parseInt(formData.caseId) : null, // Add caseId
-        userId: formData.userId && String(formData.userId).trim() && String(formData.userId).trim() !== '0' ? parseInt(formData.userId) : null, // Only send userId if not empty or zero
+        caseId: parseInt(formData.caseId),
+        ...(rawUserId ? { userId: parseInt(rawUserId) } : {}),
         totalAmount: parseFloat(formData.totalAmount),
-        status: formData.status,
+        status: formData.status || 'DRAFT',
         notes: formData.notes?.trim() || null,
-        dueDate: formData.dueDate ? new Date(formData.dueDate + 'T23:59:59').toISOString() : null, // Send as full datetime at end of day
+        dueDate: formData.dueDate ? toMiddayISO(formData.dueDate) : null
       };
 
-      console.log('Sending API data:', apiData);
+      console.log("📤 Payload gửi BE:", JSON.stringify(apiData, null, 2));
 
       const response = await invoiceService.create(apiData);
 
-      console.log('Invoice created successfully:', response);
+      console.log("📥 Response từ BE:", response);
 
-      if (onInvoiceCreated) {
-        onInvoiceCreated(response);
-      }
-
-      // Reset form
+      onInvoiceCreated?.(response);
       resetForm();
-      onClose();
-
+      onClose?.();
     } catch (err) {
-      console.error('Error creating invoice:', err);
-
+      console.error('❌ Error creating invoice:', err);
       let errorMessage = 'Không thể tạo hóa đơn';
-
-      if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.response?.data?.error) {
-        errorMessage = err.response.data.error;
-      } else if (err.response?.status === 400) {
-        errorMessage = 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.';
-      }
-
+      if (err.response?.data?.message) errorMessage = err.response.data.message;
+      else if (err.response?.data?.error) errorMessage = err.response.data.error;
+      else if (err.response?.status === 400) errorMessage = 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -179,16 +184,21 @@ export const useInvoiceCreation = ({ customerId, isOpen, onClose, onInvoiceCreat
 
   const handleClose = () => {
     resetForm();
-    onClose();
+    onClose?.();
   };
 
-  // Utility functions
   const resetForm = () => {
+    const computedUserId =
+      currentUser?.staffId || currentUser?.userId || currentUser?.id || '';
     setFormData({
       customerId: customerId || '',
       caseId: selectedCase ? selectedCase.caseId : '',
-      userId: currentUser?.staffId || currentUser?.userId || '',
-      totalAmount: selectedCase ? (selectedCase.remainingAmount || selectedCase.totalAmount || selectedCase.totalCost || 0) : 0,
+      userId: computedUserId,
+      totalAmount: selectedCase
+        ? (selectedCase.remainingAmount ||
+           selectedCase.totalAmount ||
+           selectedCase.totalCost || 0)
+        : 0,
       status: 'DRAFT',
       notes: '',
       dueDate: ''
@@ -196,28 +206,20 @@ export const useInvoiceCreation = ({ customerId, isOpen, onClose, onInvoiceCreat
     setError(null);
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount);
-  };
+  // Utils
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
+      .format(Number(amount || 0));
 
-  // Return all state and functions needed by the UI component
   return {
-    // State
     formData,
     loading,
     error,
-    customerCases, // Add customer cases
-    casesLoading, // Add cases loading state
-
-    // Event handlers
+    customerCases,
+    casesLoading,
     handleInputChange,
     handleSubmit,
     handleClose,
-
-    // Utility functions
     formatCurrency,
     validateForm
   };

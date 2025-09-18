@@ -18,8 +18,8 @@ const InvoiceCreationModal = ({
     formData,
     loading,
     error,
-    customerCases, // Add customer cases
-    casesLoading, // Add cases loading
+    customerCases,
+    casesLoading,
     handleInputChange,
     handleSubmit,
     handleClose,
@@ -230,7 +230,6 @@ const InvoiceCreationModal = ({
                 Tổng tiền
               </h3>
 
-              {/* Total amount input */}
               <div className="rounded-lg bg-gray-50/70 border border-gray-200 p-4 space-y-4">
                 <div className="space-y-1.5">
                   <label htmlFor="totalAmount" className="text-sm font-medium text-gray-700">
@@ -249,7 +248,7 @@ const InvoiceCreationModal = ({
                     value={formData.totalAmount}
                     onChange={(e) => handleInputChange('totalAmount', e.target.value)}
                     placeholder={selectedCase ? "Tự động từ hồ sơ" : "Nhập tổng tiền..."}
-                    disabled={loading || !!selectedCase} // Disable if case is selected
+                    disabled={loading || !!selectedCase}
                     className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
                   {selectedCase && (
@@ -259,10 +258,11 @@ const InvoiceCreationModal = ({
                   )}
                 </div>
 
-                {/* Display formatted amount */}
                 {formData.totalAmount > 0 && (
                   <div className="text-center py-2">
-                    <span className="text-lg font-bold text-gray-900">{formatCurrency(formData.totalAmount)}</span>
+                    <span className="text-lg font-bold text-gray-900">
+                      {formatCurrency(formData.totalAmount)}
+                    </span>
                   </div>
                 )}
               </div>
@@ -283,7 +283,7 @@ const InvoiceCreationModal = ({
           <button
             type="submit"
             onClick={handleSubmit}
-            disabled={loading || !formData.customerId || (!selectedCase && formData.totalAmount <= 0)}
+            disabled={loading}   // ✅ chỉ disable khi đang loading
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-pink-600 text-white hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
@@ -295,9 +295,7 @@ const InvoiceCreationModal = ({
                 Đang tạo...
               </>
             ) : (
-              <>
-                💰 Tạo hóa đơn
-              </>
+              <>💰 Tạo hóa đơn</>
             )}
           </button>
         </div>

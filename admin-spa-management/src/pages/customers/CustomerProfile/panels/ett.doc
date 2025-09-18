@@ -1,0 +1,565 @@
+schema: core
+
+BaseEntity (Abstract)
+
+createdAt: LocalDateTime
+
+updatedAt: LocalDateTime
+
+Tier
+
+tierId: Long (PK)
+
+code: TierCode (Enum: REGULAR, SILVER, GOLD, VIP)
+
+minSpent: BigDecimal
+
+minPoints: Integer
+
+benefits: Map<String, Object> (JSON)
+
+customers: Set<Customer> (One-to-Many)
+
+Role
+
+roleId: Long (PK)
+
+code: String (Unique)
+
+name: String
+
+description: String
+
+staffUsers: Set<StaffUser> (One-to-Many)
+
+StaffUser
+
+staffId: Long (PK)
+
+fullName: String
+
+phone: String (Unique)
+
+email: String (Unique)
+
+passwordHash: String
+
+status: StaffStatus (Enum: ACTIVE, INACTIVE)
+
+role: Role (Many-to-One)
+
+lastLoginAt: LocalDateTime
+
+password: String (Transient)
+
+Customer
+
+customerId: Long (PK)
+
+fullName: String
+
+phone: String (Unique)
+
+email: String
+
+dob: LocalDate
+
+gender: Gender (Enum)
+
+address: String
+
+tier: Tier (Many-to-One)
+
+totalPoints: Integer
+
+totalSpent: BigDecimal
+
+notes: String
+
+isVip: Boolean
+
+schema: lead
+
+Lead
+
+leadId: Long (PK)
+
+fullName: String
+
+phone: String
+
+note: String
+
+ipAddress: String
+
+userAgent: String
+
+customerId: Long
+
+isExistingCustomer: Boolean
+
+createdDate: LocalDateTime
+
+status: LeadStatus (Enum: NEW, IN_PROGRESS, WON, LOST)
+
+Appointment
+
+apptId: Long (PK)
+
+lead: Lead (Many-to-One)
+
+customer: Customer (Many-to-One)
+
+service: SpaService (Many-to-One)
+
+technician: StaffUser (Many-to-One)
+
+receptionist: StaffUser (Many-to-One)
+
+startAt: LocalDateTime
+
+endAt: LocalDateTime
+
+status: AppointmentStatus (Enum: SCHEDULED, CONFIRMED, DONE)
+
+note: String
+
+reminderSent: Boolean
+
+confirmedAt: LocalDateTime
+
+cancelledReason: String
+
+schema: service
+
+SpaService
+
+serviceId: Long (PK)
+
+code: String (Unique)
+
+name: String
+
+category: ServiceCategory (Enum: LIP, BROW, OTHER)
+
+basePrice: BigDecimal
+
+durationMin: Integer
+
+isActive: Boolean
+
+description: String
+
+requiresConsultation: Boolean
+
+requiresPatchTest: Boolean
+
+retouchDays: Integer
+
+warrantyDays: Integer
+
+CustomerCase
+
+caseId: Long (PK)
+
+customer: Customer (Many-to-One)
+
+primaryService: SpaService (Many-to-One)
+
+intakeNote: String
+
+contraindicationFlags: Map<String, Object> (JSON)
+
+consentSignedAt: LocalDateTime
+
+status: CaseStatus (Enum: INTAKE, IN_PROGRESS, DONE)
+
+paidStatus: PaidStatus (Enum: UNPAID, PAID, PARTIAL)
+
+startDate: LocalDate
+
+endDate: LocalDate
+
+totalAmount: BigDecimal
+
+hasAfterPhoto: Boolean
+
+caseServices: List<CaseService> (One-to-Many)
+
+technicianNotes: List<TechnicianNote> (One-to-Many)
+
+casePhotos: List<CasePhoto> (One-to-Many)
+
+CaseService
+
+caseServiceId: Long (PK)
+
+customerCase: CustomerCase (Many-to-One)
+
+service: SpaService (Many-to-One)
+
+unitPrice: BigDecimal
+
+qty: Integer
+
+discountAmount: BigDecimal
+
+taxAmount: BigDecimal
+
+lineTotal: BigDecimal
+
+status: CaseServiceStatus (Enum: PLANNED, IN_PROGRESS, DONE)
+
+notes: String
+
+discountReason: String
+
+TechnicianNote
+
+techNoteId: Long (PK)
+
+customerCase: CustomerCase (Many-to-One)
+
+technician: StaffUser (Many-to-One)
+
+note: String
+
+complications: Map<String, Object> (JSON)
+
+aftercare: Map<String, Object> (JSON)
+
+techniqueUsed: String
+
+productsUsed: String
+
+colorCode: String
+
+isRetouchNeeded: Boolean
+
+retouchNotes: String
+
+clientFeedback: String
+
+satisfactionRating: Integer
+
+CasePhoto
+
+photoId: Long (PK)
+
+customerCase: CustomerCase (Many-to-One)
+
+type: PhotoType (Enum: BEFORE, AFTER)
+
+fileUrl: String
+
+takenAt: LocalDateTime
+
+takenBy: StaffUser (Many-to-One)
+
+note: String
+
+fileName: String
+
+fileSize: Long
+
+mimeType: String
+
+isPrimary: Boolean
+
+isPublic: Boolean
+
+consentForMarketing: Boolean
+
+anonymized: Boolean
+
+deletionRequestedAt: LocalDateTime
+
+schema: billing
+
+Invoice
+
+invoiceId: Long (PK)
+
+customerCase: CustomerCase (One-to-One)
+
+customer: Customer (Many-to-One)
+
+staffUser: StaffUser (Many-to-One)
+
+totalAmount: BigDecimal
+
+status: InvoiceStatus (Enum: DRAFT, SENT, PAID, CANCELLED)
+
+paidAt: LocalDateTime
+
+invoiceNumber: String (Unique)
+
+dueDate: LocalDateTime
+
+notes: String
+
+payments: List<Payment> (One-to-Many)
+
+Payment
+
+paymentId: Long (PK)
+
+invoice: Invoice (Many-to-One)
+
+method: PaymentMethod (Enum: CASH, CARD, BANK_TRANSFER, EWALLET)
+
+amount: BigDecimal
+
+txnRef: String
+
+paidBy: StaffUser (Many-to-One)
+
+paidAt: LocalDateTime
+
+note: String
+
+cardLastFour: String
+
+bankName: String
+
+ewalletProvider: String
+
+receiptNumber: String (Unique)
+
+isRefunded: Boolean
+
+refundedAt: LocalDateTime
+
+refundReason: String
+
+PointTransaction
+
+pointTxnId: Long (PK)
+
+customer: Customer (Many-to-One)
+
+source: PointTransactionType (Enum: EARN, REDEEM)
+
+points: Integer
+
+relatedInvoice: Invoice (Many-to-One)
+
+note: String
+
+balanceBefore: Integer
+
+balanceAfter: Integer
+
+referenceNumber: String (Unique)
+
+expiresAt: LocalDateTime
+
+isExpired: Boolean
+
+schema: audit
+
+AuditLog
+
+auditId: Long (PK)
+
+actor: StaffUser (Many-to-One)
+
+entityName: String
+
+entityId: Long
+
+action: AuditAction (Enum: CREATE, UPDATE, DELETE)
+
+diff: Map<String, Object> (JSON)
+
+createdAt: LocalDateTime
+
+ipAddress: String
+
+userAgent: String
+
+requestId: String
+
+sessionId: String
+
+oldValues: Map<String, Object> (JSON)
+
+newValues: Map<String, Object> (JSON)
+
+reason: String
+
+Task
+
+taskId: Long (PK)
+
+title: String
+
+type: TaskType (Enum: CALL, FOLLOW_UP, RETOUCH_REMINDER)
+
+dueAt: LocalDateTime
+
+assignee: StaffUser (Many-to-One)
+
+relatedLead: Lead (Many-to-One)
+
+relatedCase: CustomerCase (Many-to-One)
+
+status: TaskStatus (Enum: OPEN, IN_PROGRESS, DONE, CANCELLED)
+
+note: String
+
+priority: Integer
+
+completedAt: LocalDateTime
+
+completedBy: StaffUser (Many-to-One)
+
+reminderSent: Boolean
+
+reminderSentAt: LocalDateTime
+
+isRecurring: Boolean
+
+recurrencePattern: String
+
+contactPhone: String
+
+contactName: String
+
+RetouchSchedule
+
+retouchId: Long (PK)
+
+customerCase: CustomerCase (Many-to-One)
+
+dueAt: LocalDateTime
+
+status: RetouchStatus (Enum: PLANNED, SCHEDULED, DONE, CANCELLED)
+
+note: String
+
+scheduledAt: LocalDateTime
+
+completedAt: LocalDateTime
+
+reminderSent: Boolean
+
+reminderSentAt: LocalDateTime
+
+daysBeforeReminder: Integer
+
+isFreeRetouch: Boolean
+
+discountPercentage: Integer
+
+cancellationReason: String
+
+rescheduledFrom: LocalDateTime
+
+QUAN HỆ
+
+1–1
+
+Invoice ↔ CustomerCase
+
+1–n
+
+Tier → Customer
+
+Role → StaffUser
+
+Customer → CustomerCase
+
+Customer → PointTransaction
+
+StaffUser → AuditLog
+
+StaffUser → Task
+
+StaffUser → Payment
+
+StaffUser → Appointment (as technician)
+
+StaffUser → Appointment (as receptionist)
+
+StaffUser → TechnicianNote
+
+StaffUser → CasePhoto
+
+Lead → Appointment
+
+Lead → Task
+
+SpaService → Appointment
+
+SpaService → CaseService
+
+CustomerCase → CaseService
+
+CustomerCase → TechnicianNote
+
+CustomerCase → CasePhoto
+
+CustomerCase → RetouchSchedule
+
+CustomerCase → Task
+
+Invoice → Payment
+
+Invoice → PointTransaction
+
+n–1
+
+Customer → Tier
+
+StaffUser → Role
+
+Appointment → Lead
+
+Appointment → Customer
+
+Appointment → SpaService
+
+Appointment → StaffUser (technician)
+
+Appointment → StaffUser (receptionist)
+
+CustomerCase → Customer
+
+CustomerCase → SpaService (primary service)
+
+CaseService → CustomerCase
+
+CaseService → SpaService
+
+TechnicianNote → CustomerCase
+
+TechnicianNote → StaffUser
+
+CasePhoto → CustomerCase
+
+CasePhoto → StaffUser
+
+Invoice → Customer
+
+Invoice → StaffUser
+
+Payment → Invoice
+
+Payment → StaffUser
+
+PointTransaction → Customer
+
+PointTransaction → Invoice
+
+AuditLog → StaffUser
+
+Task → StaffUser (assignee)
+
+Task → StaffUser (completedBy)
+
+Task → Lead
+
+Task → CustomerCase
+
+RetouchSchedule → CustomerCase

@@ -12,6 +12,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -94,5 +97,14 @@ public class InvoiceController {
             @Valid @RequestBody InvoiceStatusRequest request) {
         InvoiceResponse invoice = invoiceService.updateInvoiceStatus(id, request);
         return ResponseEntity.ok(ApiResponse.success(invoice, "Invoice status updated successfully"));
+    }
+
+    @Operation(summary = "Get invoices by customer ID")
+    @SecurityRequirement(name = "Bearer Authentication")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    @GetMapping("/customer/{customerId}")
+    public ResponseEntity<ApiResponse<List<InvoiceResponse>>> getInvoicesByCustomerId(@PathVariable Long customerId) {
+        List<InvoiceResponse> invoices = invoiceService.getInvoicesByCustomerId(customerId);
+        return ResponseEntity.ok(ApiResponse.success(invoices, "Customer invoices retrieved successfully"));
     }
 }
