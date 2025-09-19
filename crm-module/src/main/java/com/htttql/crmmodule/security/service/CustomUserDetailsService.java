@@ -1,7 +1,7 @@
 package com.htttql.crmmodule.security.service;
 
 import com.htttql.crmmodule.core.entity.StaffUser;
-import com.htttql.crmmodule.core.repository.StaffUserRepository;
+import com.htttql.crmmodule.core.repository.IStaffUserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -21,7 +21,7 @@ import java.util.Collections;
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final StaffUserRepository staffUserRepository;
+    private final IStaffUserRepository staffUserRepository;
 
     @Override
     @Transactional(readOnly = true)

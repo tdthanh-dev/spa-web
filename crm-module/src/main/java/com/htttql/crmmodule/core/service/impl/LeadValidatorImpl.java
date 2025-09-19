@@ -1,4 +1,4 @@
-package com.htttql.crmmodule.core.service;
+package com.htttql.crmmodule.core.service.impl;
 
 import com.htttql.crmmodule.core.repository.ICustomerRepository;
 import com.htttql.crmmodule.lead.dto.LeadRequest;

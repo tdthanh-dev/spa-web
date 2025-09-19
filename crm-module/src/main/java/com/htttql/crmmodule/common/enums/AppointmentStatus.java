@@ -11,6 +11,7 @@ public enum AppointmentStatus {
     NO_SHOW("No show"),
     DONE("Done"),
     CANCELLED("Cancelled");
+    
 
     private final String description;
 }

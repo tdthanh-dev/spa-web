@@ -1,7 +1,7 @@
 package com.htttql.crmmodule.security.service;
 
 import com.htttql.crmmodule.core.entity.StaffUser;
-import com.htttql.crmmodule.core.repository.StaffUserRepository;
+import com.htttql.crmmodule.core.repository.IStaffUserRepository;
 import com.htttql.crmmodule.common.exception.BadRequestException;
 import com.htttql.crmmodule.security.dto.OtpRequest;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class OtpService {
 
-    private final StaffUserRepository staffUserRepository;
+    private final IStaffUserRepository staffUserRepository;
 
     private final RedisTemplate<String, String> redisTemplate;
     private final JavaMailSender mailSender;

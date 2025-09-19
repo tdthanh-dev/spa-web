@@ -1,283 +1,169 @@
-import React from 'react';
-import { useCustomerCreationModal } from '@/hooks';
+// filepath: src/components/Appointment/CreateAppointmentModal.jsx
+import React, { useMemo, useState } from 'react';
+import { appointmentsApi } from '@/services/appointmentsApi';
 
-const CustomerCreationModal = ({
+const CreateAppointmentModal = ({
   isOpen,
   onClose,
-  onCustomerCreated,
-  leadData = null,
+  onAppointmentCreated,
+  services = [],
+  customers = [],
+  context
 }) => {
-  const {
-    formData,
-    validation,
-    loading,
-    error,
-    handleInputChange,
-    handleSubmit,
-    handleClose,
-  } = useCustomerCreationModal(leadData, onCustomerCreated, onClose);
+  const [form, setForm] = useState({
+    leadId: null,
+    customerId: null,
+    serviceId: '',
+    startAt: '',
+    endAt: '',
+    status: 'SCHEDULED',
+    notes: '',
+    technicianId: '',
+    receptionistId: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [err, setErr] = useState('');
+
+  useMemo(() => {
+    if (context?.leadId) {
+      setForm(f => ({ ...f, leadId: context.leadId, customerId: null }));
+    }
+  }, [context]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectCustomer = (e) => {
+    const val = e.target.value ? Number(e.target.value) : null;
+    setForm(prev => ({ ...prev, customerId: val, leadId: null }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErr('');
+
+    if (!form.leadId && !form.customerId) {
+      setErr('Vui lòng chọn Lead hoặc Khách hàng.');
+      return;
+    }
+    if (form.leadId && form.customerId) {
+      setErr('Chỉ chọn một trong hai: Lead hoặc Khách hàng.');
+      return;
+    }
+    if (!form.serviceId || !form.startAt || !form.endAt || !form.receptionistId) {
+      setErr('Vui lòng nhập đủ thông tin.');
+      return;
+    }
+
+    const body = {
+      ...(form.leadId ? { leadId: Number(form.leadId) } : {}),
+      ...(form.customerId ? { customerId: Number(form.customerId) } : {}),
+      serviceId: Number(form.serviceId),
+      startAt: new Date(form.startAt).toISOString(),
+      endAt: new Date(form.endAt).toISOString(),
+      status: form.status,
+      notes: form.notes || undefined,
+      technicianId: form.technicianId ? Number(form.technicianId) : undefined,
+      receptionistId: Number(form.receptionistId)
+    };
+
+    try {
+      setSubmitting(true);
+      await appointmentsApi.createAppointment(body);
+      onAppointmentCreated?.();
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+      setErr('Không thể tạo lịch hẹn');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (!isOpen) return null;
 
-  const inputBase =
-    'w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition';
-  const labelBase = 'block text-sm font-medium text-black-700';
-  const sectionCard =
-    'rounded-2xl border border-primary-100 bg-white/80 backdrop-blur-sm p-5';
-
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm overflow-y-auto"
-      onClick={handleClose}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div
-        className="bg-white shadow-2xl w-full max-w-[960px] rounded-2xl flex flex-col"
-        style={{ maxHeight: '90vh' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header (sticky) */}
-        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-primary-100 bg-primary-50/80 backdrop-blur">
-          <h2 className="text-lg sm:text-xl font-bold text-black-900 flex items-center gap-2">
-            <span className="text-xl">🆕</span>
-            Tạo khách hàng mới
-          </h2>
-          <button
-            className="p-2 rounded-lg text-black-700 hover:bg-black-50 transition"
-            onClick={handleClose}
-            disabled={loading}
-            title="Đóng"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-lg rounded-xl bg-white shadow-lg">
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <h2 className="text-lg font-semibold">Tạo lịch hẹn</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-black">✖</button>
         </div>
-
-        {/* Body (scroll) */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
-          {error && (
-            <div className="mb-5 p-3 rounded-xl border border-error-200 bg-error-50 text-error-700 text-sm flex items-center gap-2">
-              <span>⚠️</span>
-              <span>{error}</span>
+        <form onSubmit={handleSubmit} className="space-y-4 p-4">
+          {err && <p className="rounded bg-rose-50 p-2 text-sm text-rose-700">{err}</p>}
+          {!context?.leadId && (
+            <div>
+              <label className="block text-sm font-medium">Khách hàng</label>
+              <select
+                name="customerId"
+                value={form.customerId || ''}
+                onChange={handleSelectCustomer}
+                className="mt-1 w-full rounded border px-3 py-2"
+              >
+                <option value="">-- Chọn khách hàng --</option>
+                {customers.map(c => (
+                  <option key={c.customerId} value={c.customerId}>
+                    {c.fullName || c.name} ({c.phone})
+                  </option>
+                ))}
+              </select>
             </div>
           )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Thông tin cơ bản */}
-            <section className={sectionCard}>
-              <h3 className="text-base font-semibold text-black-900 mb-3 flex items-center gap-2">
-                <span className="text-lg">👤</span>
-                Thông tin cơ bản
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label htmlFor="fullName" className={labelBase}>
-                    Họ và tên <span className="text-error-500">*</span>
-                  </label>
-                  <input
-                    id="fullName"
-                    type="text"
-                    value={formData.fullName}
-                    onChange={(e) => handleInputChange('fullName', e.target.value)}
-                    placeholder="Nhập họ và tên"
-                    className={`${inputBase} ${
-                      validation.fullName ? 'border-error-300 bg-error-50' : 'border-black-200'
-                    }`}
-                    disabled={loading}
-                    required
-                  />
-                  {validation.fullName && (
-                    <p className="text-error-600 text-xs">{validation.fullName}</p>
-                  )}
-                </div>
-
-                <div className="space-y-1.5">
-                  <label htmlFor="phone" className={labelBase}>
-                    Số điện thoại <span className="text-error-500">*</span>
-                  </label>
-                  <input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    placeholder="0987654321"
-                    className={`${inputBase} ${
-                      validation.phone ? 'border-error-300 bg-error-50' : 'border-black-200'
-                    }`}
-                    disabled={loading}
-                    required
-                  />
-                  {validation.phone && (
-                    <p className="text-error-600 text-xs">{validation.phone}</p>
-                  )}
-                </div>
-
-                <div className="space-y-1.5 md:col-span-2">
-                  <label htmlFor="email" className={labelBase}>
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    placeholder="example@email.com"
-                    className={`${inputBase} ${
-                      validation.email ? 'border-error-300 bg-error-50' : 'border-black-200'
-                    }`}
-                    disabled={loading}
-                  />
-                  {validation.email && (
-                    <p className="text-error-600 text-xs">{validation.email}</p>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            {/* Thông tin cá nhân */}
-            <section className={sectionCard}>
-              <h3 className="text-base font-semibold text-black-900 mb-3 flex items-center gap-2">
-                <span className="text-lg">🎂</span>
-                Thông tin cá nhân
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label htmlFor="dob" className={labelBase}>
-                    Ngày sinh
-                  </label>
-                  <input
-                    id="dob"
-                    type="date"
-                    value={formData.dob}
-                    onChange={(e) => handleInputChange('dob', e.target.value)}
-                    className={`${inputBase} ${
-                      validation.dob ? 'border-error-300 bg-error-50' : 'border-black-200'
-                    }`}
-                    disabled={loading}
-                    max={new Date().toISOString().split('T')[0]}
-                  />
-                  {validation.dob && (
-                    <p className="text-error-600 text-xs">{validation.dob}</p>
-                  )}
-                </div>
-
-                <div className="space-y-1.5">
-                  <label htmlFor="gender" className={labelBase}>
-                    Giới tính
-                  </label>
-                  <select
-                    id="gender"
-                    value={formData.gender}
-                    onChange={(e) => handleInputChange('gender', e.target.value)}
-                    className={`${inputBase} border-black-200`}
-                    disabled={loading}
-                  >
-                    <option value="FEMALE">Nữ</option>
-                    <option value="MALE">Nam</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1.5 md:col-span-2">
-                  <label htmlFor="address" className={labelBase}>
-                    Địa chỉ
-                  </label>
-                  <input
-                    id="address"
-                    type="text"
-                    value={formData.address}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
-                    placeholder="Nhập địa chỉ"
-                    className={`${inputBase} ${
-                      validation.address ? 'border-error-300 bg-error-50' : 'border-black-200'
-                    }`}
-                    disabled={loading}
-                  />
-                  {validation.address && (
-                    <p className="text-error-600 text-xs">{validation.address}</p>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            {/* Thông tin bổ sung */}
-            <section className={sectionCard}>
-              <h3 className="text-base font-semibold text-black-900 mb-3 flex items-center gap-2">
-                <span className="text-lg">📝</span>
-                Thông tin bổ sung
-              </h3>
-
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label htmlFor="notes" className={labelBase}>
-                    Ghi chú
-                  </label>
-                  <textarea
-                    id="notes"
-                    rows={3}
-                    value={formData.notes}
-                    onChange={(e) => handleInputChange('notes', e.target.value)}
-                    placeholder="Nhập ghi chú về khách hàng..."
-                    className={`${inputBase} border-black-200 resize-none`}
-                    disabled={loading}
-                  />
-                </div>
-
-                <label htmlFor="isVip" className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    id="isVip"
-                    type="checkbox"
-                    checked={formData.isVip}
-                    onChange={(e) => handleInputChange('isVip', e.target.checked)}
-                    className="w-4 h-4 rounded border-black-300 text-primary-600 focus:ring-primary-500"
-                    disabled={loading}
-                  />
-                  <span className="text-sm font-medium text-black-800 flex items-center gap-2">
-                    <span className="text-base">👑</span> Khách hàng VIP
-                  </span>
-                </label>
-              </div>
-            </section>
-          </form>
-        </div>
-
-        {/* Footer (sticky) */}
-        <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 px-6 py-4 border-t border-primary-100 bg-white/95 backdrop-blur">
-          <button
-            type="button"
-            className="px-4 py-2 rounded-xl bg-white text-black-800 ring-1 ring-black-200 hover:bg-black-50 transition disabled:opacity-60"
-            onClick={handleClose}
-            disabled={loading}
-          >
-            Hủy
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 rounded-xl bg-primary-500 text-white hover:bg-primary-600 transition disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2"
-            onClick={handleSubmit}
-            disabled={loading || !formData.fullName || !formData.phone}
-          >
-            {loading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Đang tạo...
-              </>
-            ) : (
-              <>
-                <span>✅</span> Tạo khách hàng
-              </>
-            )}
-          </button>
-        </div>
+          <div>
+            <label className="block text-sm font-medium">Dịch vụ</label>
+            <select
+              name="serviceId"
+              value={form.serviceId}
+              onChange={handleChange}
+              className="mt-1 w-full rounded border px-3 py-2"
+              required
+            >
+              <option value="">-- Chọn dịch vụ --</option>
+              {services.map(s => (
+                <option key={s.serviceId} value={s.serviceId}>
+                  {s.name} ({s.basePrice}₫)
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium">Thời gian bắt đầu</label>
+              <input type="datetime-local" name="startAt" value={form.startAt} onChange={handleChange} className="mt-1 w-full rounded border px-3 py-2" required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Thời gian kết thúc</label>
+              <input type="datetime-local" name="endAt" value={form.endAt} onChange={handleChange} className="mt-1 w-full rounded border px-3 py-2" required />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Trạng thái</label>
+            <select name="status" value={form.status} onChange={handleChange} className="mt-1 w-full rounded border px-3 py-2">
+              <option value="SCHEDULED">Đã đặt</option>
+              <option value="CONFIRMED">Đã xác nhận</option>
+              <option value="DONE">Hoàn thành</option>
+              <option value="CANCELLED">Đã hủy</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Ghi chú</label>
+            <textarea name="notes" value={form.notes} onChange={handleChange} rows={3} className="mt-1 w-full rounded border px-3 py-2" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Receptionist ID</label>
+            <input type="number" name="receptionistId" value={form.receptionistId} onChange={handleChange} className="mt-1 w-full rounded border px-3 py-2" required />
+          </div>
+          <div className="flex justify-end gap-2 border-t pt-3">
+            <button type="button" onClick={onClose} className="rounded bg-gray-200 px-4 py-2 hover:bg-gray-300">Hủy</button>
+            <button type="submit" disabled={submitting} className="rounded bg-pink-600 px-4 py-2 text-white hover:bg-pink-700 disabled:opacity-50">
+              {submitting ? 'Đang lưu...' : 'Tạo'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
 };
 
-export default CustomerCreationModal;
+export default CreateAppointmentModal;

@@ -1,4 +1,4 @@
-package com.htttql.crmmodule.core.service;
+package com.htttql.crmmodule.core.service.impl;
 
 import com.htttql.crmmodule.common.exception.BadRequestException;
 import com.htttql.crmmodule.common.exception.ResourceNotFoundException;
@@ -9,6 +9,8 @@ import com.htttql.crmmodule.core.entity.Role;
 import com.htttql.crmmodule.core.entity.StaffUser;
 import com.htttql.crmmodule.core.repository.IRoleRepository;
 import com.htttql.crmmodule.core.repository.IStaffUserRepository;
+import com.htttql.crmmodule.core.service.IStaffUserService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;

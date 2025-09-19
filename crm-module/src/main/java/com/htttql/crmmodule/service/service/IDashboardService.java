@@ -1,21 +1,25 @@
 package com.htttql.crmmodule.service.service;
 
-import com.htttql.crmmodule.service.dto.*;
-
 import java.util.List;
+import java.util.Map;
 
 public interface IDashboardService {
-    ReceptionistDashboardStats getReceptionistDashboardStats();
 
-    List<ChartDataPoint> getAppointmentStatusChart();
+    // Chỉ số cho lễ tân: toàn số (count)
+    Map<String, Long> getReceptionistDashboardStats();
 
-    List<ChartDataPoint> getAppointmentTrendChart();
+    // Phân phối trạng thái lịch hẹn: scheduled/confirmed/inProgress/completed/cancelled
+    Map<String, Long> getAppointmentStatusChart();
 
-    List<ChartDataPoint> getServicePopularityChart();
+    // Xu hướng lịch hẹn 7 ngày (mặc định 7 phần tử, oldest -> newest)
+    List<Long> getAppointmentTrendChart();
 
-    List<ChartDataPoint> getCustomerTiersChart();
+    // Phân phối Tier khách hàng
+    Map<String, Long> getCustomerTiersChart();
 
-    List<ChartDataPoint> getRevenueTrendChart();
+    // Xu hướng doanh thu 30 ngày (đơn vị VND, trả về long)
+    List<Long> getRevenueTrendChart();
 
-    MonthlyPerformance getMonthlyPerformance();
+    // Tổng hợp tháng hiện tại: toàn số
+    Map<String, Long> getMonthlyPerformance();
 }

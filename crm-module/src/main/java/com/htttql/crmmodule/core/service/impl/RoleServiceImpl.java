@@ -1,9 +1,10 @@
-package com.htttql.crmmodule.core.service;
+package com.htttql.crmmodule.core.service.impl;
 
 import com.htttql.crmmodule.core.dto.RoleRequest;
 import com.htttql.crmmodule.core.dto.RoleResponse;
 import com.htttql.crmmodule.core.entity.Role;
 import com.htttql.crmmodule.core.repository.IRoleRepository;
+import com.htttql.crmmodule.core.service.IRoleService;
 import com.htttql.crmmodule.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

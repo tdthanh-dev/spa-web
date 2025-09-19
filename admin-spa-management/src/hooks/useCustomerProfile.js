@@ -4,7 +4,7 @@ import customersApi from '@/services/customersApi';
 import appointmentsApi from '@/services/appointmentsApi';
 import photosApi from '@/services/photosApi';
 
-// ---- Helpers (đúng trạng thái cũ) ----
+// ---- Helpers ----
 const VN = new Intl.NumberFormat('vi-VN');
 
 export const formatCurrency = (v) => {
@@ -40,19 +40,9 @@ export const getStatusBadge = (type, status) => {
   return map[status] || { text: status || '', className: 'bg-gray-100 text-gray-800' };
 };
 
-// ---- Hook chính (trạng thái cũ) ----
+// ---- Hook chính ----
 export function useCustomerProfile(userRole, customerIdFromRoute) {
-  console.log('🔵 useCustomerProfile called with:', { userRole, customerIdFromRoute });
-
   const [customerId, setCustomerId] = useState(customerIdFromRoute);
-  
-  // Update customerId when route parameter changes
-  useEffect(() => {
-    if (customerIdFromRoute && customerIdFromRoute !== customerId) {
-      console.log('🔄 Updating customerId from route:', customerIdFromRoute);
-      setCustomerId(customerIdFromRoute);
-    }
-  }, [customerIdFromRoute, customerId]);
   const [customer, setCustomer] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -76,12 +66,10 @@ export function useCustomerProfile(userRole, customerIdFromRoute) {
   const [showInvoiceCreationModal, setShowInvoiceCreationModal] = useState(false);
   const [selectedCaseForInvoice, setSelectedCaseForInvoice] = useState(null);
 
-  // ---- Loaders (đúng kiểu cũ) ----
+  // ---- Loaders ----
   const loadCustomer = useCallback(async (cid) => {
-    console.log('🔄 Loading customer data for ID:', cid);
     try {
       const data = await customersApi.getById(cid);
-      console.log('✅ Customer data loaded:', data);
       setCustomer(data || null);
       return data;
     } catch (error) {
@@ -93,8 +81,7 @@ export function useCustomerProfile(userRole, customerIdFromRoute) {
   const loadTreatments = useCallback(async (cid) => {
     setTabLoading((s) => ({ ...s, treatments: true }));
     try {
-      const cases = await customersApi.getCases(cid); // trả về danh sách "case" theo customer
-      // getCases returns pagination format, so we need to extract content
+      const cases = await customersApi.getCases(cid);
       setTabData((prev) => ({ ...prev, treatments: cases.content || [] }));
     } finally {
       setTabLoading((s) => ({ ...s, treatments: false }));
@@ -104,9 +91,22 @@ export function useCustomerProfile(userRole, customerIdFromRoute) {
   const loadAppointments = useCallback(async (cid) => {
     setTabLoading((s) => ({ ...s, appointments: true }));
     try {
-      const appts = await appointmentsApi.getByCustomer(cid);
-      // getByCustomer returns pagination format, so we need to extract content
-      setTabData((prev) => ({ ...prev, appointments: appts.content || [] }));
+      const res = await appointmentsApi.getByCustomer(cid);
+
+      let appointments = [];
+      if (res?.content && Array.isArray(res.content)) {
+        appointments = res.content;
+      } else if (Array.isArray(res)) {
+        appointments = res;
+      } else if (res?.data?.content && Array.isArray(res.data.content)) {
+        appointments = res.data.content;
+      } else if (Array.isArray(res?.data)) {
+        appointments = res.data;
+      } else {
+        appointments = [];
+      }
+
+      setTabData((prev) => ({ ...prev, appointments }));
     } finally {
       setTabLoading((s) => ({ ...s, appointments: false }));
     }
@@ -116,19 +116,15 @@ export function useCustomerProfile(userRole, customerIdFromRoute) {
     setTabLoading((s) => ({ ...s, financial: true }));
     try {
       const data = await customersApi.getFinancial(cid, { sortBy: 'createdAt', sortDir: 'desc' });
-      // getFinancial returns pagination format, so we need to extract content
       setTabData((prev) => ({ ...prev, financial: data.content || [] }));
     } finally {
       setTabLoading((s) => ({ ...s, financial: false }));
     }
   }, []);
 
-  // Load photos - Note: photos are linked to cases, not customers directly
   const loadPhotos = useCallback(async (cid) => {
     setTabLoading((s) => ({ ...s, photos: true }));
     try {
-      // TODO: Photos should be loaded by caseId, not customerId
-      // For now, using getPhotosByCustomer as workaround (it will show warning)
       const photos = await photosApi.getPhotosByCustomer(cid);
       setTabData((prev) => ({ ...prev, photos: photos || [] }));
     } finally {
@@ -140,38 +136,17 @@ export function useCustomerProfile(userRole, customerIdFromRoute) {
     const cid = cidParam || customerId;
     if (!cid) return;
 
-    console.log('🔄 Starting to load customer data for:', cid);
     setLoading(true);
     setError('');
 
     try {
-      // Load customer data first
-      console.log('🔄 Loading customer basic info...');
       await loadCustomer(cid);
-      console.log('✅ Customer loaded, now loading related data...');
-
-      // Load related data in parallel
-      const promises = [
-        loadTreatments(cid).catch(err => {
-          console.warn('Failed to load treatments:', err);
-          return Promise.resolve(); // Don't fail the whole operation
-        }),
-        loadAppointments(cid).catch(err => {
-          console.warn('Failed to load appointments:', err);
-          return Promise.resolve(); // Don't fail the whole operation
-        }),
-        loadFinancial(cid).catch(err => {
-          console.warn('Failed to load financial data:', err);
-          return Promise.resolve(); // Don't fail the whole operation
-        }),
-        loadPhotos(cid).catch(err => {
-          console.warn('Failed to load photos:', err);
-          return Promise.resolve(); // Don't fail the whole operation
-        })
-      ];
-
-      await Promise.all(promises);
-      console.log('✅ All customer data loaded successfully');
+      await Promise.all([
+        loadTreatments(cid).catch((err) => console.warn('Failed to load treatments:', err)),
+        loadAppointments(cid).catch((err) => console.warn('Failed to load appointments:', err)),
+        loadFinancial(cid).catch((err) => console.warn('Failed to load financial:', err)),
+        loadPhotos(cid).catch((err) => console.warn('Failed to load photos:', err)),
+      ]);
     } catch (e) {
       console.error('[CustomerProfile] Error loading customer:', e);
       setError('Không thể tải dữ liệu khách hàng.');
@@ -180,7 +155,7 @@ export function useCustomerProfile(userRole, customerIdFromRoute) {
     }
   }, [customerId, loadCustomer, loadTreatments, loadAppointments, loadFinancial, loadPhotos]);
 
-  // ---- User actions (đúng kiểu cũ) ----
+  // ---- User actions ----
   const handleCreateCase = () => setShowCaseCreationModal(true);
   const handleCloseCaseCreationModal = () => setShowCaseCreationModal(false);
   const handleCaseCreated = async () => {
@@ -208,7 +183,7 @@ export function useCustomerProfile(userRole, customerIdFromRoute) {
     window.history.back();
   };
 
-  // ---- Mount effect ----
+  // ---- Effects ----
   useEffect(() => {
     if (customerIdFromRoute && customerId !== customerIdFromRoute) {
       setCustomerId(customerIdFromRoute);
@@ -221,7 +196,6 @@ export function useCustomerProfile(userRole, customerIdFromRoute) {
 
   // ---- Expose ----
   return {
-    // State
     customer,
     loading,
     error,
@@ -232,13 +206,11 @@ export function useCustomerProfile(userRole, customerIdFromRoute) {
     tabData,
     tabLoading,
 
-    // Setters
     setActiveTab,
     setShowCaseCreationModal,
     setShowInvoiceCreationModal,
     setSelectedCaseForInvoice,
 
-    // Handlers
     handleCreateCase,
     handleCreateInvoice,
     handleCreateInvoiceForCase,
@@ -248,15 +220,11 @@ export function useCustomerProfile(userRole, customerIdFromRoute) {
     handleInvoiceCreated,
     handleBackToList,
 
-    // Utils
     formatCurrency,
     formatDateTimeVN,
     getStatusBadge,
 
-    // API
     loadCustomerData,
-
-    // Navigation
     customerId,
   };
 }

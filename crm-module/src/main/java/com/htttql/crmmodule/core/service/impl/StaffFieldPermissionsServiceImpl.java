@@ -1,10 +1,12 @@
-package com.htttql.crmmodule.core.service;
+package com.htttql.crmmodule.core.service.impl;
 
 import com.htttql.crmmodule.common.enums.PermissionLevel;
 import com.htttql.crmmodule.common.exception.ResourceNotFoundException;
 import com.htttql.crmmodule.core.dto.StaffFieldPermissions;
 import com.htttql.crmmodule.core.entity.StaffFieldPermissionsEntity;
 import com.htttql.crmmodule.core.repository.IStaffFieldPermissionsRepository;
+import com.htttql.crmmodule.core.service.IStaffFieldPermissionsService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -20,7 +22,9 @@ public class StaffFieldPermissionsServiceImpl implements IStaffFieldPermissionsS
     @Transactional(readOnly = true)
     public StaffFieldPermissions getByStaffId(Long staffId) {
         if (staffId == null) return null;
-        return repository.findByStaffId(staffId).map(this::toDto).orElse(null);
+        return repository.findByStaffId(staffId)
+                .map(this::toDto)
+                .orElse(null);
     }
 
     @Override

@@ -4,7 +4,7 @@ import com.htttql.crmmodule.common.enums.StaffStatus;
 import com.htttql.crmmodule.common.exception.BadRequestException;
 import com.htttql.crmmodule.common.exception.UnauthorizedException;
 import com.htttql.crmmodule.core.entity.StaffUser;
-import com.htttql.crmmodule.core.repository.StaffUserRepository;
+import com.htttql.crmmodule.core.repository.IStaffUserRepository;
 import com.htttql.crmmodule.security.dto.*;
 import com.htttql.crmmodule.security.jwt.JwtUtils;
 import com.htttql.crmmodule.security.service.TokenBlacklistService;
@@ -33,7 +33,7 @@ import java.util.Map;
 public class AuthService implements IAuthService {
 
     private final AuthenticationManager authenticationManager;
-    private final StaffUserRepository staffUserRepository;
+    private final IStaffUserRepository staffUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final OtpService otpService;

@@ -3,7 +3,8 @@ package com.htttql.crmmodule.core.controller;
 import com.htttql.crmmodule.common.dto.ApiResponse;
 import com.htttql.crmmodule.core.dto.AccountDto;
 import com.htttql.crmmodule.core.dto.CreateAccountRequest;
-import com.htttql.crmmodule.core.service.AccountService;
+import com.htttql.crmmodule.core.service.impl.AccountService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

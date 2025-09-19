@@ -2,7 +2,6 @@
 import React from 'react';
 import { useCustomerList } from '@/hooks';
 import CustomerCreationModal from '@/components/Customer/CustomerCreationModal';
-import CustomerDetailModal from '@/components/Customer/CustomerDetailModal';
 
 const CustomerList = ({ userRole }) => {
   const {
@@ -10,28 +9,19 @@ const CustomerList = ({ userRole }) => {
     data,
     searchTerm,
     currentPage,
-    selectedCustomer,
     showCreateModal,
-    showDetailModal,
-    selectedCustomerId,
 
     // setters
     setSearchTerm,
     setCurrentPage,
-    setSelectedCustomer,
     setShowCreateModal,
-    setShowDetailModal,
-    setSelectedCustomerId,
 
     // handlers
     handleSearch,
-    handleCustomerClick,
     handleViewProfile,
     handleOpenCreateModal,
     handleCloseCreateModal,
     handleCustomerCreated,
-    handleCloseDetailModal,
-    handleEditCustomer,
 
     // utils
     getCustomerTypeLabel,
@@ -80,8 +70,8 @@ const CustomerList = ({ userRole }) => {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Quản lý Khách hàng</h1>
-          <p className="text-sm text-gray-500">Tìm kiếm, xem chi tiết, tạo khách hàng mới</p>
+          <h1 className="text-2xl font-bold text-gray-900 whitespace-nowrap">Quản lý Khách hàng</h1>
+          <p className="text-sm text-gray-500 whitespace-nowrap">Tìm kiếm, xem chi tiết, tạo khách hàng mới</p>
         </div>
         {(userRole === 'ADMIN' || userRole === 'RECEPTIONIST') && (
           <button
@@ -102,7 +92,7 @@ const CustomerList = ({ userRole }) => {
               placeholder="Tìm theo tên, SĐT, email…"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-4 py-2.5 pr-12 outline-none transition focus:border-pink-400 focus:ring-2 focus:ring-pink-200"
+              className="w-full rounded-xl border border-gray-300 px-4 py-2 pr-12 outline-none transition focus:border-pink-400 focus:ring-2 focus:ring-pink-200"
             />
             {searchTerm && (
               <button
@@ -121,7 +111,7 @@ const CustomerList = ({ userRole }) => {
           </div>
           <button
             type="submit"
-            className="rounded-xl bg-gray-900 px-4 py-2.5 font-medium text-white hover:bg-black"
+            className="rounded-xl bg-gray-900 px-4 py-2 font-medium text-white hover:bg-black"
           >
             🔍 Tìm kiếm
           </button>
@@ -132,64 +122,64 @@ const CustomerList = ({ userRole }) => {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
           <div className="text-xl font-semibold text-gray-900">{data.totalElements}</div>
-          <div className="text-sm text-gray-500">Tổng khách hàng</div>
+          <div className="text-sm text-gray-500 whitespace-nowrap">Tổng khách hàng</div>
         </div>
         <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
           <div className="text-xl font-semibold text-gray-900">
             {data.customers.filter((c) => c.isVip).length}
           </div>
-          <div className="text-sm text-gray-500">Khách VIP</div>
+          <div className="text-sm text-gray-500 whitespace-nowrap">Khách VIP</div>
         </div>
         <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
           <div className="text-xl font-semibold text-gray-900">
             {data.customers.filter((c) => (c.totalSpent || 0) > 0).length}
           </div>
-          <div className="text-sm text-gray-500">Đã chi tiêu</div>
+          <div className="text-sm text-gray-500 whitespace-nowrap">Đã chi tiêu</div>
         </div>
       </div>
 
       {/* Table */}
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
         <div className="max-h-[60vh] overflow-auto">
-          <table className="min-w-full text-left text-sm">
+          <table className="table-fixed min-w-full text-left text-sm">
             <thead className="sticky top-0 z-10 bg-gray-50">
               <tr className="text-gray-700">
-                <th className="px-5 py-3 font-semibold">Tên khách hàng</th>
-                <th className="px-5 py-3 font-semibold">Số điện thoại</th>
-                <th className="px-5 py-3 font-semibold">Email</th>
-                <th className="px-5 py-3 font-semibold">Loại</th>
-                <th className="px-5 py-3 font-semibold">Tier</th>
-                <th className="px-5 py-3 font-semibold">Chi tiêu</th>
-                <th className="px-5 py-3 font-semibold">Điểm</th>
-                <th className="px-5 py-3 font-semibold">Thao tác</th>
+                <th scope="col" className="px-4 py-2 font-semibold whitespace-nowrap">Tên khách hàng</th>
+                <th scope="col" className="px-4 py-2 font-semibold whitespace-nowrap">Số điện thoại</th>
+                <th scope="col" className="px-4 py-2 font-semibold whitespace-nowrap">Email</th>
+                <th scope="col" className="px-4 py-2 font-semibold whitespace-nowrap">Loại</th>
+                <th scope="col" className="px-4 py-2 font-semibold whitespace-nowrap">Tier</th>
+                <th scope="col" className="px-4 py-2 font-semibold whitespace-nowrap">Chi tiêu</th>
+                <th scope="col" className="px-4 py-2 font-semibold whitespace-nowrap">Điểm</th>
+                <th scope="col" className="px-4 py-2 font-semibold whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {data.customers.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-14">
+                  <td colSpan={8} className="px-6 py-10">
                     <div className="flex flex-col items-center justify-center text-gray-500">
                       <div className="mb-2 text-4xl">👥</div>
-                      <p className="font-medium">Không tìm thấy khách hàng nào</p>
-                      <p className="mt-1 text-sm text-gray-400">
+                      <p className="font-medium whitespace-nowrap">Không tìm thấy khách hàng nào</p>
+                      <p className="mt-1 text-sm text-gray-400 whitespace-nowrap">
                         Thử thay đổi từ khóa tìm kiếm
                       </p>
                     </div>
                   </td>
                 </tr>
               ) : (
-                data.customers.map((customer) => {
+                data.customers.map((customer, idx) => {
                   const rowType = getCustomerRowClass(customer); // 'vip' | 'returning' | 'new'
                   const tierInfo = getTierBadge(customer.tierName);
 
                   return (
                     <tr
                       key={customer.customerId}
-                      className="hover:bg-gray-50"
+                      className={`odd:bg-white even:bg-gray-50 hover:bg-gray-100 cursor-pointer`}
                       onClick={() => handleCustomerClick(customer.customerId)}
                     >
                       {/* Tên */}
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-2 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           {customer.isVip && <span className="text-base">👑</span>}
                           <span className="max-w-[220px] truncate font-medium text-gray-900">
@@ -199,20 +189,22 @@ const CustomerList = ({ userRole }) => {
                       </td>
 
                       {/* Phone */}
-                      <td className="px-5 py-3 tabular-nums text-gray-700">{customer.phone}</td>
+                      <td className="px-4 py-2 tabular-nums text-gray-700 whitespace-nowrap">
+                        {customer.phone}
+                      </td>
 
                       {/* Email */}
-                      <td className="px-5 py-3">
-                        <span className="block max-w-[240px] truncate text-gray-600">
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        <span className="inline-block max-w-[240px] truncate text-gray-600 align-middle">
                           {customer.email || 'Chưa có'}
                         </span>
                       </td>
 
                       {/* Loại */}
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-2 whitespace-nowrap">
                         <span
                           className={[
-                            'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
+                            'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
                             rowType === 'vip'
                               ? 'bg-pink-50 text-pink-700 ring-1 ring-pink-200'
                               : rowType === 'returning'
@@ -225,10 +217,10 @@ const CustomerList = ({ userRole }) => {
                       </td>
 
                       {/* Tier */}
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-2 whitespace-nowrap">
                         <span
                           className={[
-                            'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1',
+                            'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1',
                             tierInfo.class === 'diamond'
                               ? 'bg-white text-gray-900 ring-gray-300'
                               : tierInfo.class === 'platinum'
@@ -245,41 +237,44 @@ const CustomerList = ({ userRole }) => {
                       </td>
 
                       {/* Chi tiêu */}
-                      <td className="px-5 py-3 font-medium text-gray-700">
+                      <td className="px-4 py-2 font-medium text-gray-700 whitespace-nowrap">
                         {customer.totalSpent
                           ? `${customer.totalSpent.toLocaleString('vi-VN')} VNĐ`
                           : '0 VNĐ'}
                       </td>
 
                       {/* Điểm */}
-                      <td className="px-5 py-3 font-medium text-gray-700">
+                      <td className="px-4 py-2 font-medium text-gray-700 whitespace-nowrap">
                         {customer.totalPoints || 0} điểm
                       </td>
 
                       {/* Actions */}
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-2 whitespace-nowrap">
                         <div className="flex items-center gap-2">
+                          {/* Xem profile: icon-only, không xuống dòng */}
                           <button
-                            className="rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-gray-800 ring-1 ring-gray-200 hover:bg-gray-50"
+                            className="rounded-md bg-white p-1.5 text-sm font-medium text-gray-800 ring-1 ring-gray-200 hover:bg-gray-50"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleViewProfile(customer.customerId);
                             }}
-                            title="Xem profile khách hàng"
+                            title="Xem hồ sơ khách hàng"
+                            aria-label="Xem hồ sơ khách hàng"
                           >
-                            👁️ Xem
+                            👁️
                           </button>
 
+                          {/* Mở chi tiết: điều hướng đến trang profile đầy đủ */}
                           <button
-                            className="rounded-lg bg-pink-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-pink-700"
+                            className="rounded-md bg-pink-600 p-1.5 text-sm font-medium text-white hover:bg-pink-700"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedCustomerId(customer.customerId);
-                              setShowDetailModal(true);
+                              handleViewProfile(customer.customerId);
                             }}
-                            title="Mở modal chi tiết"
+                            title="Xem chi tiết đầy đủ"
+                            aria-label="Xem chi tiết đầy đủ"
                           >
-                            Chi tiết
+                            🔎
                           </button>
                         </div>
                       </td>
@@ -302,7 +297,7 @@ const CustomerList = ({ userRole }) => {
           >
             ← Trang trước
           </button>
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-gray-600 whitespace-nowrap">
             Trang <strong>{currentPage + 1}</strong> /{' '}
             <strong>{Math.ceil(data.totalElements / 20)}</strong>
           </span>
@@ -316,97 +311,11 @@ const CustomerList = ({ userRole }) => {
         </div>
       )}
 
-      {/* Quick-view Modal (selectedCustomer) */}
-      {selectedCustomer && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-          onClick={() => setSelectedCustomer(null)}
-        >
-          <div
-            className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-5 py-4">
-              <h3 className="text-lg font-semibold text-gray-900">Chi tiết khách hàng</h3>
-              <button
-                className="rounded-lg p-2 hover:bg-gray-100"
-                onClick={() => setSelectedCustomer(null)}
-                title="Đóng"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="space-y-2 p-5 text-sm">
-              <p>
-                <span className="font-medium">Tên:</span> {selectedCustomer.fullName}
-              </p>
-              <p>
-                <span className="font-medium">SĐT:</span> {selectedCustomer.phone}
-              </p>
-              <p>
-                <span className="font-medium">Email:</span> {selectedCustomer.email || 'Chưa có'}
-              </p>
-              <p>
-                <span className="font-medium">Địa chỉ:</span> {selectedCustomer.address || 'Chưa có'}
-              </p>
-              <p>
-                <span className="font-medium">Ghi chú:</span> {selectedCustomer.notes || 'Không có'}
-              </p>
-              <p>
-                <span className="font-medium">Tier:</span> {selectedCustomer.tierName || 'Chưa có'}
-              </p>
-              <p>
-                <span className="font-medium">Tổng chi tiêu:</span>{' '}
-                {selectedCustomer.totalSpent
-                  ? `${selectedCustomer.totalSpent.toLocaleString('vi-VN')} VNĐ`
-                  : '0 VNĐ'}
-              </p>
-              <p>
-                <span className="font-medium">Điểm:</span> {selectedCustomer.totalPoints || 0}
-              </p>
-              <p>
-                <span className="font-medium">VIP:</span> {selectedCustomer.isVip ? 'Có' : 'Không'}
-              </p>
-              <p className="text-gray-500">
-                Dùng nút <strong>Chi tiết</strong> để mở modal đầy đủ.
-              </p>
-            </div>
-            <div className="flex items-center justify-end gap-2 border-t border-gray-100 bg-white/80 px-5 py-4">
-              <button
-                className="rounded-xl bg-white px-4 py-2 text-gray-800 ring-1 ring-gray-200 transition hover:bg-gray-50"
-                onClick={() => setSelectedCustomer(null)}
-              >
-                Đóng
-              </button>
-              <button
-                className="rounded-xl bg-gray-900 px-4 py-2 text-white hover:bg-black"
-                onClick={() => {
-                  setSelectedCustomerId(selectedCustomer.customerId);
-                  setSelectedCustomer(null);
-                  setShowDetailModal(true);
-                }}
-              >
-                Mở chi tiết đầy đủ
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Customer Creation Modal */}
       <CustomerCreationModal
         isOpen={showCreateModal}
         onClose={handleCloseCreateModal}
         onCustomerCreated={handleCustomerCreated}
-      />
-
-      {/* Customer Detail Modal */}
-      <CustomerDetailModal
-        isOpen={showDetailModal}
-        onClose={handleCloseDetailModal}
-        customerId={selectedCustomerId}
-        onEdit={handleEditCustomer}
-        userRole={userRole}
       />
     </div>
   );

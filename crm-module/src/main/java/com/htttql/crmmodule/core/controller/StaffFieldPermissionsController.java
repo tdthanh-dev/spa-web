@@ -34,11 +34,17 @@ public class StaffFieldPermissionsController {
     }
 
     @GetMapping("/{staffId}")
-    @Operation(summary = "Get permissions by staff ID", description = "Retrieve field permissions for a specific staff member")
+    @Operation(summary = "Get permissions by staff ID", description = "Retrieve field permissions for a specific staff member. Creates default permissions if not found.")
     public ResponseEntity<ApiResponse<StaffFieldPermissions>> getPermissions(
             @Parameter(description = "Staff ID") @PathVariable Long staffId) {
 
         StaffFieldPermissions permissions = staffFieldPermissionsService.getByStaffId(staffId);
+        if (permissions == null) {
+            // Tự động tạo permissions mặc định nếu chưa có
+            permissions = staffFieldPermissionsService.create(staffId);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.success(permissions, "Permissions created with default values for staff ID: " + staffId));
+        }
         return ResponseEntity.ok(ApiResponse.success(permissions, "Permissions retrieved successfully"));
     }
 

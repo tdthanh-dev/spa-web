@@ -1,352 +1,248 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { appointmentsService } from "@/services";
-import { useFormValidation, validationRules } from "@/hooks/useFormValidation";
+// filepath: src/components/Appointment/CreateAppointmentModal.jsx
+import React, { useMemo, useState } from 'react';
+import { appointmentsApi } from '@/services/appointmentsApi';
 
 const CreateAppointmentModal = ({
   isOpen,
   onClose,
   onAppointmentCreated,
-  lead = null,
   services = [],
   customers = [],
+  context // { leadId }
 }) => {
+  const [form, setForm] = useState({
+    leadId: null,
+    customerId: null,
+    serviceId: '',
+    startAt: '',   // "YYYY-MM-DDTHH:mm"
+    endAt: '',
+    status: 'SCHEDULED',
+    notes: '',
+    technicianId: '',    // optional
+    receptionistId: ''   // tuỳ BE, nếu map JWT thì có thể bỏ
+  });
   const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState("");
+  const [err, setErr] = useState('');
 
-  // ---- Form setup ----
-  const initialValues = useMemo(
-    () => ({
-      customerId: lead?.customerId || "",
-      serviceId: "",
-      startAt: "",
-      endAt: "",
-      status: "SCHEDULED",
-      notes: lead?.note || "",
-    }),
-    [lead]
-  );
-
-  const rules = {
-    customerId: [validationRules.required("Vui lòng chọn khách hàng")],
-    serviceId: [validationRules.required("Vui lòng chọn dịch vụ")],
-    startAt: [validationRules.required("Vui lòng chọn thời gian bắt đầu")],
-    endAt: [validationRules.required("Vui lòng chọn thời gian kết thúc")],
-    status: [validationRules.required("Vui lòng chọn trạng thái")],
-  };
-
-  const {
-    values,
-    errors,
-    touched,
-    isValid,
-    handleChange,
-    handleBlur,
-    validateForm,
-    reset,
-    setValues,
-  } = useFormValidation(initialValues, rules);
-
-  // ---- Helpers ----
-  const findService = (idStr) => {
-    const id = parseInt(idStr, 10);
-    if (!Number.isFinite(id)) return null;
-    return services.find((s) => s.serviceId === id) || null;
-  };
-
-  const isoLocal = (d) => {
-    // format yyyy-MM-ddTHH:mm for datetime-local input
-    return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 16);
-  };
-
-  // ---- defaulting when modal opens ----
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const firstService = services[0] || null;
-    const defaultServiceId = firstService ? String(firstService.serviceId) : "";
-
-    setValues((prev) => ({
-      ...initialValues,
-      serviceId: defaultServiceId,
-    }));
-    setFormError("");
-  }, [isOpen, services, initialValues, setValues]);
-
-  // ---- handlers that auto-compute endAt ----
-  const handleServiceChange = (serviceIdStr) => {
-    const svc = findService(serviceIdStr);
-
-    if (svc && values.startAt) {
-      const start = new Date(values.startAt);
-      const end = new Date(start.getTime() + (svc.durationMin || 0) * 60000);
-      setValues((prev) => ({
-        ...prev,
-        serviceId: serviceIdStr,
-        endAt: isoLocal(end),
-      }));
-    } else {
-      handleChange("serviceId", serviceIdStr);
+  useMemo(() => {
+    if (context?.leadId) {
+      setForm((f) => ({ ...f, leadId: context.leadId, customerId: null }));
     }
+  }, [context]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
+  const handleSelectCustomer = (e) => {
+    const val = e.target.value ? Number(e.target.value) : null;
+    setForm(prev => ({ ...prev, customerId: val, leadId: null }));
   };
 
-  const handleStartTimeChange = (startAtStr) => {
-    const svc = findService(values.serviceId);
-    if (svc) {
-      const start = new Date(startAtStr);
-      const end = new Date(start.getTime() + (svc.durationMin || 0) * 60000);
-      setValues((prev) => ({
-        ...prev,
-        startAt: startAtStr,
-        endAt: isoLocal(end),
-      }));
-    } else {
-      handleChange("startAt", startAtStr);
-    }
+  const normalizeLocal = (s) => {
+    if (!s) return s;
+    // input "YYYY-MM-DDTHH:mm" -> thêm :00, và chắc chắn KHÔNG có 'Z'
+    return s.length === 16 ? `${s}:00` : s.replace('Z', '');
   };
 
-  // ---- submit ----
   const handleSubmit = async (e) => {
-    e?.preventDefault?.();
+    e.preventDefault();
+    setErr('');
 
-    if (!validateForm()) {
-      setFormError("Vui lòng kiểm tra lại thông tin.");
-      return;
+    // XOR lead/customer
+    if (!form.leadId && !form.customerId) return setErr('Vui lòng chọn 1 trong 2: Lead hoặc Khách hàng.');
+    if (form.leadId && form.customerId) return setErr('Chỉ chọn một trong hai: Lead hoặc Khách hàng.');
+
+    if (!form.serviceId || !form.startAt || !form.endAt) {
+      return setErr('Vui lòng nhập đủ Dịch vụ, thời gian Bắt đầu & Kết thúc.');
     }
+
+    const startLocal = normalizeLocal(form.startAt);
+    const endLocal = normalizeLocal(form.endAt);
+
+    // FE validate end > start
+    if (new Date(startLocal) >= new Date(endLocal)) {
+      return setErr('Thời gian kết thúc phải sau thời gian bắt đầu.');
+    }
+
+    const body = {
+      ...(form.leadId ? { leadId: Number(form.leadId) } : {}),
+      ...(form.customerId ? { customerId: Number(form.customerId) } : {}),
+      serviceId: Number(form.serviceId),
+      startAt: startLocal, // <<<<<< gửi local-naive
+      endAt: endLocal,     // <<<<<< gửi local-naive
+      status: form.status,
+      notes: form.notes || undefined,
+      technicianId: form.technicianId ? Number(form.technicianId) : null, // optional
+      receptionistId: form.receptionistId ? Number(form.receptionistId) : undefined
+    };
 
     try {
       setSubmitting(true);
-      setFormError("");
-
-      const payload = {
-        customerId: parseInt(values.customerId, 10),
-        serviceId: parseInt(values.serviceId, 10),
-        startAt: new Date(values.startAt).toISOString(),
-        endAt: new Date(values.endAt).toISOString(),
-        status: values.status,
-        notes: values.notes?.trim() || "",
-      };
-
-      await appointmentsService.create(payload);
+      await appointmentsApi.createAppointment(body);
       onAppointmentCreated?.();
-      // Đóng + reset sau khi tạo thành công
-      reset();
-      onClose?.();
-    } catch (err) {
-      console.error("Error creating appointment:", err);
-      setFormError("Không thể tạo lịch hẹn. Vui lòng thử lại.");
+    } catch (error) {
+      console.error('Create appointment error:', error);
+      setErr(
+        error?.response?.data?.message ||
+        error?.message ||
+        'Tạo lịch hẹn thất bại'
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  // ---- close ----
-  const handleRequestClose = () => {
-    reset();            // muốn giữ giá trị khi mở lại thì có thể bỏ dòng này
-    setFormError("");
-    onClose?.();
-  };
-
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3"
-      onClick={handleRequestClose} // overlay click => close
-    >
-      <div
-        className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-xl"
-        onClick={(e) => e.stopPropagation()} // chặn click trong hộp
-        role="dialog"
-        aria-modal="true"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-900">Tạo lịch hẹn mới</h2>
-          <button
-            onClick={handleRequestClose}
-            className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"
-            aria-label="Đóng"
-            type="button"
-          >
-            ✕
-          </button>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4">
+      <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">Tạo lịch hẹn</h3>
+          <button onClick={onClose} className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm hover:bg-gray-50">Đóng</button>
         </div>
 
-        {/* Body */}
-        <form onSubmit={handleSubmit} className="px-6 py-5">
-          {formError && (
-            <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-              <span className="mt-0.5">⚠️</span>
-              <span>{formError}</span>
-            </div>
-          )}
+        {err && <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</div>}
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Customer */}
-            <div>
-              <label htmlFor="customerId" className="mb-1 block text-sm font-medium text-gray-700">
-                Khách hàng <span className="text-red-500">*</span>
-              </label>
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* One-of: Lead or Customer */}
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-gray-700">Chọn khách hàng (hoặc nhập Lead ID)</label>
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
               <select
-                id="customerId"
-                value={values.customerId}
-                onChange={(e) => handleChange("customerId", e.target.value)}
-                onBlur={() => handleBlur("customerId")}
-                disabled={submitting}
-                className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 ${
-                  errors.customerId && touched.customerId ? "border-red-300" : "border-gray-300"
-                }`}
+                name="customerId"
+                value={form.customerId ?? ''}
+                onChange={handleSelectCustomer}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                disabled={!!form.leadId}
               >
-                <option value="">Chọn khách hàng</option>
+                <option value="">-- Chọn khách hàng --</option>
                 {customers.map((c) => (
-                  <option key={c.customerId} value={c.customerId}>
-                    {c.fullName} - {c.phone}
+                  <option key={c.customerId ?? c.id} value={c.customerId ?? c.id}>
+                    {c.fullName} {c.phone ? `(${c.phone})` : ''}
                   </option>
                 ))}
               </select>
-              {errors.customerId && touched.customerId && (
-                <p className="mt-1 text-xs text-red-600">{errors.customerId}</p>
-              )}
-            </div>
 
-            {/* Service */}
-            <div>
-              <label htmlFor="serviceId" className="mb-1 block text-sm font-medium text-gray-700">
-                Dịch vụ <span className="text-red-500">*</span>
-              </label>
-              <select
-                id="serviceId"
-                value={values.serviceId}
-                onChange={(e) => handleServiceChange(e.target.value)}
-                onBlur={() => handleBlur("serviceId")}
-                disabled={submitting || services.length === 0}
-                className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 ${
-                  errors.serviceId && touched.serviceId ? "border-red-300" : "border-gray-300"
-                }`}
-              >
-                {services.length === 0 ? (
-                  <option value="">Không có dịch vụ</option>
-                ) : (
-                  <>
-                    {services.map((s) => (
-                      <option key={s.serviceId} value={s.serviceId}>
-                        {s.name} — {s.durationMin} phút
-                      </option>
-                    ))}
-                  </>
-                )}
-              </select>
-              {errors.serviceId && touched.serviceId && (
-                <p className="mt-1 text-xs text-red-600">{errors.serviceId}</p>
-              )}
-            </div>
-
-            {/* Start */}
-            <div>
-              <label htmlFor="startAt" className="mb-1 block text-sm font-medium text-gray-700">
-                Thời gian bắt đầu <span className="text-red-500">*</span>
-              </label>
               <input
-                type="datetime-local"
-                id="startAt"
-                value={values.startAt}
-                onChange={(e) => handleStartTimeChange(e.target.value)}
-                onBlur={() => handleBlur("startAt")}
-                disabled={submitting}
-                min={new Date().toISOString().slice(0, 16)}
-                className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 ${
-                  errors.startAt && touched.startAt ? "border-red-300" : "border-gray-300"
-                }`}
-              />
-              {errors.startAt && touched.startAt && (
-                <p className="mt-1 text-xs text-red-600">{errors.startAt}</p>
-              )}
-            </div>
-
-            {/* End */}
-            <div>
-              <label htmlFor="endAt" className="mb-1 block text-sm font-medium text-gray-700">
-                Thời gian kết thúc <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="datetime-local"
-                id="endAt"
-                value={values.endAt}
-                onChange={(e) => handleChange("endAt", e.target.value)}
-                onBlur={() => handleBlur("endAt")}
-                disabled={submitting}
-                min={values.startAt || new Date().toISOString().slice(0, 16)}
-                className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 ${
-                  errors.endAt && touched.endAt ? "border-red-300" : "border-gray-300"
-                }`}
-              />
-              {errors.endAt && touched.endAt && (
-                <p className="mt-1 text-xs text-red-600">{errors.endAt}</p>
-              )}
-            </div>
-
-            {/* Status */}
-            <div>
-              <label htmlFor="status" className="mb-1 block text-sm font-medium text-gray-700">
-                Trạng thái <span className="text-red-500">*</span>
-              </label>
-              <select
-                id="status"
-                value={values.status}
-                onChange={(e) => handleChange("status", e.target.value)}
-                onBlur={() => handleBlur("status")}
-                disabled={submitting}
-                className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 ${
-                  errors.status && touched.status ? "border-red-300" : "border-gray-300"
-                }`}
-              >
-                <option value="SCHEDULED">Đã đặt</option>
-                <option value="CONFIRMED">Đã xác nhận</option>
-              </select>
-              {errors.status && touched.status && (
-                <p className="mt-1 text-xs text-red-600">{errors.status}</p>
-              )}
-            </div>
-
-            {/* Notes (full width) */}
-            <div className="sm:col-span-2">
-              <label htmlFor="notes" className="mb-1 block text-sm font-medium text-gray-700">
-                Ghi chú
-              </label>
-              <textarea
-                id="notes"
-                rows={3}
-                value={values.notes}
-                onChange={(e) => handleChange("notes", e.target.value)}
-                disabled={submitting}
-                placeholder="Nhập ghi chú cho lịch hẹn..."
+                type="number"
+                name="leadId"
+                placeholder="Lead ID (nếu tạo từ lead)"
+                value={form.leadId ?? ''}
+                onChange={(e) => setForm(prev => ({ ...prev, leadId: e.target.value ? Number(e.target.value) : null, customerId: null }))}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                disabled={!!form.customerId}
               />
             </div>
+            <p className="mt-1 text-xs text-gray-500">Chỉ chọn một trong hai: Khách hàng hoặc Lead.</p>
+          </div>
+
+          {/* Service */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Dịch vụ</label>
+            <select
+              name="serviceId"
+              value={form.serviceId}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+              required
+            >
+              <option value="">-- Chọn dịch vụ --</option>
+              {services.map((s) => (
+                <option key={s.serviceId ?? s.id} value={s.serviceId ?? s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Status */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Trạng thái</label>
+            <select
+              name="status"
+              value={form.status}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+            >
+              <option value="SCHEDULED">SCHEDULED</option>
+              <option value="CONFIRMED">CONFIRMED</option>
+              <option value="NO_SHOW">NO_SHOW</option>
+              <option value="DONE">DONE</option>
+              <option value="CANCELLED">CANCELLED</option>
+            </select>
+          </div>
+
+          {/* Start/End */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Bắt đầu</label>
+            <input
+              type="datetime-local"
+              name="startAt"
+              value={form.startAt}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+              required
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Kết thúc</label>
+            <input
+              type="datetime-local"
+              name="endAt"
+              value={form.endAt}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+              required
+            />
+          </div>
+
+          {/* Technician (optional) */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Technician ID (tuỳ chọn)</label>
+            <input
+              type="number"
+              name="technicianId"
+              value={form.technicianId}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+              placeholder="Ví dụ: 4"
+            />
+          </div>
+
+          {/* Receptionist (nếu BE chưa map JWT thì cần) */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Receptionist ID</label>
+            <input
+              type="number"
+              name="receptionistId"
+              value={form.receptionistId}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+              placeholder="Ví dụ: 3"
+            />
+          </div>
+
+          {/* Notes */}
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-gray-700">Ghi chú</label>
+            <textarea
+              name="notes"
+              value={form.notes}
+              onChange={handleChange}
+              rows={3}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+              placeholder="Ghi chú thêm..."
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="md:col-span-2 mt-2 flex items-center justify-end gap-2">
+            <button type="button" className="rounded-lg border border-gray-200 px-4 py-2 text-sm hover:bg-gray-50" onClick={onClose} disabled={submitting}>Hủy</button>
+            <button type="submit" className="rounded-lg bg-pink-600 px-4 py-2 text-sm text-white hover:bg-pink-700 disabled:opacity-60" disabled={submitting}>
+              {submitting ? 'Đang tạo...' : 'Tạo lịch hẹn'}
+            </button>
           </div>
         </form>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t px-6 py-4">
-          <button
-            type="button"
-            onClick={handleRequestClose}
-            disabled={submitting}
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
-          >
-            Hủy
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={submitting || !isValid}
-            className="rounded-lg bg-pink-600 px-4 py-2 text-sm font-semibold text-white hover:bg-pink-700 disabled:opacity-60"
-          >
-            {submitting ? "Đang tạo..." : "Tạo lịch hẹn"}
-          </button>
-        </div>
       </div>
     </div>
   );

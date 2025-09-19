@@ -7,4 +7,4 @@ public enum PermissionLevel {
     NO,     // No access
     VIEW,   // Read-only access
     EDIT    // Read and write access
-}
+}           

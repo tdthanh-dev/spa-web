@@ -50,10 +50,12 @@ public class Appointment extends BaseEntity {
     @JoinColumn(name = "service_id", foreignKey = @ForeignKey(name = "fk_appt_service"))
     private SpaService service;
 
+    // 👇 Technician KHÔNG bắt buộc
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "technician_id", nullable = false, foreignKey = @ForeignKey(name = "fk_appt_technician"))
+    @JoinColumn(name = "technician_id", nullable = true, foreignKey = @ForeignKey(name = "fk_appt_technician"))
     private StaffUser technician;
 
+    // Receptionist vẫn bắt buộc
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receptionist_id", nullable = false, foreignKey = @ForeignKey(name = "fk_appt_receptionist"))
     private StaffUser receptionist;
@@ -89,10 +91,13 @@ public class Appointment extends BaseEntity {
         if (startAt != null && endAt != null && endAt.isBefore(startAt)) {
             throw new IllegalArgumentException("End time must be after start time");
         }
-
         // Either lead or customer must be present
         if (lead == null && customer == null) {
             throw new IllegalArgumentException("Either lead or customer must be specified");
+        }
+        // technician có thể null, receptionist thì không
+        if (receptionist == null) {
+            throw new IllegalArgumentException("Receptionist must be specified");
         }
     }
 }

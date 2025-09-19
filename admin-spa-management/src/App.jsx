@@ -22,7 +22,7 @@ import Reports from '@/pages/admin/Reports'
 import Settings from '@/pages/admin/Settings'
 import PaymentManagement from '@/pages/admin/PaymentManagement'
 import TaskManagement from '@/pages/admin/TaskManagement'
-import PermissionsDemo from '@/pages/admin/PermissionsDemo'
+import Permissions from '@/pages/admin/Permissions'
 import StaffFieldPermissionsPage from '@/pages/admin/StaffFieldPermissionsPage'
 import { useAuth } from '@/hooks/useAuth'
 import { useRoleRouting } from '@/hooks/useRoleRouting'
@@ -57,7 +57,7 @@ const ROUTE_CONFIG = {
     },
     permissions: {
       path: '/admin/permissions',
-      component: PermissionsDemo,
+      component: Permissions,
       roles: ['ADMIN']
     },
     settings: {

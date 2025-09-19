@@ -1,32 +1,22 @@
-// filepath: admin-spa-management/src/pages/appointments/AppointmentsManagement.jsx
-import React from 'react';
+// filepath: src/pages/appointments/AppointmentsManagement.jsx
+import React, { useState } from 'react';
 import { formatDateTimeVN } from '@/utils/dateUtils';
 import { Pagination, SortableHeader } from '@/components/common/CommonComponents';
 import CreateAppointmentModal from '@/components/Appointment/CreateAppointmentModal';
+import AppointmentDetailModal from '@/components/Appointment/AppointmentDetailModal';
 import { useAppointmentsManagement } from '@/hooks/useAppointmentsManagement';
 
 const AppointmentsManagement = () => {
   const {
-    data,
-    sort,
-    pagination,
-    modalState,
-    services,
-    customers,
-    fetchData,
-    handleSort,
-    handlePageChange,
-    handlePageSizeChange,
-    handleCreateAppointment,
-    handleCloseModal,
-    handleAppointmentCreated,
-    getStatusBadge,
-    statistics,
-    hasAppointments,
-    showPagination
+    data, sort, pagination, modalState, services, customers,
+    fetchData, handleSort, handlePageChange, handlePageSizeChange,
+    handleCreateAppointment, handleCloseModal, handleAppointmentCreated,
+    getStatusBadge, statistics, hasAppointments, showPagination
   } = useAppointmentsManagement();
 
-  // Map className (từ hook) -> Tailwind để bảo đảm màu hiển thị
+  // State quản lý modal chi tiết
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+
   const statusTw = (cls) => {
     const map = {
       'status-scheduled': 'bg-blue-50 text-blue-700',
@@ -75,47 +65,23 @@ const AppointmentsManagement = () => {
             className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-800 hover:bg-gray-50"
             onClick={fetchData}
           >
-            <span className="text-base">🔄</span> Làm mới
+            🔄 Làm mới
           </button>
           <button
             className="inline-flex items-center gap-2 rounded-lg bg-pink-600 px-4 py-2 text-white hover:bg-pink-700"
             onClick={handleCreateAppointment}
           >
-            <span className="text-base">➕</span> Tạo lịch hẹn
+            ➕ Tạo lịch hẹn
           </button>
         </div>
       </div>
 
       {/* Statistics */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="flex items-center gap-3 rounded-xl bg-white p-4 shadow">
-          <div className="text-2xl">📅</div>
-          <div>
-            <div className="text-sm text-gray-500">Tổng lịch hẹn</div>
-            <div className="text-xl font-semibold text-gray-900">{statistics.total}</div>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-xl bg-white p-4 shadow">
-          <div className="text-2xl">⏰</div>
-          <div>
-            <div className="text-sm text-gray-500">Đã đặt</div>
-            <div className="text-xl font-semibold text-gray-900">{statistics.scheduled}</div>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-xl bg-white p-4 shadow">
-          <div className="text-2xl">✅</div>
-          <div>
-            <div className="text-sm text-gray-500">Đã xác nhận</div>
-            <div className="text-xl font-semibold text-gray-900">{statistics.confirmed}</div>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-xl bg-white p-4 shadow">
-          <div className="text-2xl">🎉</div>
-          <div>
-            <div className="text-sm text-gray-500">Hoàn thành</div>
-            <div className="text-xl font-semibold text-gray-900">{statistics.done}</div>
-          </div>
-        </div>
+        <Stat icon="📅" label="Tổng lịch hẹn" value={statistics.total} />
+        <Stat icon="⏰" label="Đã đặt" value={statistics.scheduled} />
+        <Stat icon="✅" label="Đã xác nhận" value={statistics.confirmed} />
+        <Stat icon="🎉" label="Hoàn thành" value={statistics.done} />
       </div>
 
       {/* Table */}
@@ -134,132 +100,58 @@ const AppointmentsManagement = () => {
             <thead className="bg-pink-50">
               <tr>
                 <th className="px-4 py-3 font-semibold text-gray-700">STT</th>
-                {/* SortableHeader nên tự render <th/>, đừng bọc thêm <th> để tránh lỗi <th> lồng <th> */}
-                <SortableHeader
-                  label="Khách hàng"
-                  sortKey="customerId"
-                  currentSort={sort}
-                  onSort={handleSort}
-                  className="px-4 py-3 font-semibold text-gray-700"
-                />
-                <SortableHeader
-                  label="Dịch vụ"
-                  sortKey="serviceId"
-                  currentSort={sort}
-                  onSort={handleSort}
-                  className="px-4 py-3 font-semibold text-gray-700"
-                />
-                <SortableHeader
-                  label="Thời gian bắt đầu"
-                  sortKey="startAt"
-                  currentSort={sort}
-                  onSort={handleSort}
-                  className="px-4 py-3 font-semibold text-gray-700"
-                />
-                <SortableHeader
-                  label="Thời gian kết thúc"
-                  sortKey="endAt"
-                  currentSort={sort}
-                  onSort={handleSort}
-                  className="px-4 py-3 font-semibold text-gray-700"
-                />
-                <SortableHeader
-                  label="Trạng thái"
-                  sortKey="status"
-                  currentSort={sort}
-                  onSort={handleSort}
-                  className="px-4 py-3 font-semibold text-gray-700"
-                />
+                <SortableHeader label="Khách hàng" sortKey="customerName" currentSort={sort} onSort={handleSort} className="px-4 py-3 font-semibold text-gray-700" />
+                <SortableHeader label="Dịch vụ" sortKey="serviceName" currentSort={sort} onSort={handleSort} className="px-4 py-3 font-semibold text-gray-700" />
+                <SortableHeader label="Bắt đầu" sortKey="startAt" currentSort={sort} onSort={handleSort} className="px-4 py-3 font-semibold text-gray-700" />
+                <SortableHeader label="Kết thúc" sortKey="endAt" currentSort={sort} onSort={handleSort} className="px-4 py-3 font-semibold text-gray-700" />
+                <SortableHeader label="Trạng thái" sortKey="status" currentSort={sort} onSort={handleSort} className="px-4 py-3 font-semibold text-gray-700" />
                 <th className="px-4 py-3 font-semibold text-gray-700">Ghi chú</th>
                 <th className="px-4 py-3 font-semibold text-gray-700">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {hasAppointments ? (
-                data.appointments.map((appointment, index) => {
-                  const statusInfo = getStatusBadge(appointment.status);
+                data.appointments.map((apt, index) => {
+                  const statusInfo = getStatusBadge(apt.status);
                   return (
-                    <tr key={appointment.appointmentId} className="border-t hover:bg-gray-50">
+                    <tr key={apt.apptId ?? index} className="border-t hover:bg-gray-50">
+                      <td className="px-4 py-3">{pagination.page * pagination.size + index + 1}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{apt.customerName || 'N/A'}</td>
+                      <td className="px-4 py-3">{apt.serviceName || 'N/A'}</td>
                       <td className="px-4 py-3">
-                        {pagination.page * pagination.size + index + 1}
-                      </td>
-                      <td className="px-4 py-3 font-medium text-gray-900">
-                        {appointment.customer?.fullName || 'N/A'}
-                      </td>
-                      <td className="px-4 py-3">
-                        {appointment.service?.name || 'N/A'}
-                      </td>
-                      <td className="px-4 py-3">
-                        {appointment.startAt ? (
-                          <span className="inline-flex rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
-                            {formatDateTimeVN(appointment.startAt)}
-                          </span>
-                        ) : (
-                          'N/A'
-                        )}
+                        <span className="inline-flex rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
+                          {formatDateTimeVN(apt.startAt)}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
-                        {appointment.endAt ? (
-                          <span className="inline-flex rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
-                            {formatDateTimeVN(appointment.endAt)}
-                          </span>
-                        ) : (
-                          'N/A'
-                        )}
+                        <span className="inline-flex rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
+                          {formatDateTimeVN(apt.endAt)}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span
-                          className={[
-                            'inline-flex rounded-full px-2 py-1 text-xs font-medium',
-                            statusTw(statusInfo.className)
-                          ].join(' ')}
-                        >
+                        <span className={['inline-flex rounded-full px-2 py-1 text-xs font-medium', statusTw(statusInfo.className)].join(' ')}>
                           {statusInfo.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {appointment.notes || 'N/A'}
-                      </td>
+                      <td className="px-4 py-3 text-gray-700">{apt.note || apt.notes || 'N/A'}</td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <button
-                            className="rounded-md bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700"
-                            title="Xem chi tiết"
-                          >
-                            👁️
-                          </button>
-                          <button
-                            className="rounded-md bg-amber-600 px-2 py-1 text-xs text-white hover:bg-amber-700"
-                            title="Chỉnh sửa"
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            className="rounded-md bg-rose-600 px-2 py-1 text-xs text-white hover:bg-rose-700"
-                            title="Hủy lịch hẹn"
-                          >
-                            ❌
-                          </button>
-                        </div>
+                        <button
+                          className="rounded-md bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
+                          onClick={() => setSelectedAppointment(apt)}
+                        >
+                          Xem chi tiết
+                        </button>
                       </td>
                     </tr>
                   );
                 })
               ) : (
-                <tr>
-                  <td colSpan={8} className="px-4 py-10">
-                    <div className="flex flex-col items-center justify-center text-gray-500">
-                      <div className="mb-2 text-3xl">📅</div>
-                      <p>Chưa có lịch hẹn nào</p>
-                    </div>
-                  </td>
-                </tr>
+                <tr><td colSpan={8} className="px-4 py-10"><Empty /></td></tr>
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Pagination */}
         {showPagination && (
           <div className="mt-4">
             <Pagination
@@ -275,7 +167,7 @@ const AppointmentsManagement = () => {
         )}
       </div>
 
-      {/* Create Appointment Modal */}
+      {/* Create Modal */}
       <CreateAppointmentModal
         isOpen={modalState.isOpen}
         onClose={handleCloseModal}
@@ -283,8 +175,33 @@ const AppointmentsManagement = () => {
         services={services}
         customers={customers}
       />
+
+      {/* Detail Modal */}
+      <AppointmentDetailModal
+        isOpen={!!selectedAppointment}
+        onClose={() => setSelectedAppointment(null)}
+        appointment={selectedAppointment}
+        onUpdated={fetchData}
+      />
     </div>
   );
 };
+
+const Stat = ({ icon, label, value }) => (
+  <div className="flex items-center gap-3 rounded-xl bg-white p-4 shadow">
+    <div className="text-2xl">{icon}</div>
+    <div>
+      <div className="text-sm text-gray-500">{label}</div>
+      <div className="text-xl font-semibold text-gray-900">{value}</div>
+    </div>
+  </div>
+);
+
+const Empty = () => (
+  <div className="flex flex-col items-center justify-center text-gray-500">
+    <div className="mb-2 text-3xl">📅</div>
+    <p>Chưa có lịch hẹn nào</p>
+  </div>
+);
 
 export default AppointmentsManagement;

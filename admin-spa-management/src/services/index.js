@@ -11,7 +11,7 @@ export { tierService } from './TierService';
 // Export new API services
 export { leadsApi } from './leadsApi';
 export { customersApi } from './customersApi';
-export { appointmentsApi } from './appointmentsApi';
+export { appointmentsApi } from './appointmentsApi'; // 
 export { servicesApi } from './servicesApi';
 export { customerCasesApi } from './customerCasesApi';
 export { invoicesApi } from './invoicesApi';

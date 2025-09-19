@@ -10,6 +10,7 @@ import com.htttql.crmmodule.lead.dto.LeadStats;
 import com.htttql.crmmodule.lead.dto.LeadStatusRequest;
 import com.htttql.crmmodule.lead.entity.Lead;
 import com.htttql.crmmodule.lead.repository.ILeadRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -37,7 +38,6 @@ public class LeadCoordinatorService {
     private final LeadRateLimitService rateLimitService;
     private final LeadAntiSpamService antiSpamService;
     private final LeadStatisticsService statisticsService;
-    private final LeadDisplayService displayService;
 
     @Transactional(readOnly = true)
     public Page<LeadResponse> getAllLeads(Pageable pageable) {
@@ -59,7 +59,7 @@ public class LeadCoordinatorService {
 
     @Transactional(readOnly = true)
     public Page<LeadResponse> getLeadsByStatus(LeadStatus status, Pageable pageable) {
-        Page<Lead> leads = leadRepository.findByStatusWithPagination(status, pageable);
+        Page<Lead> leads = leadRepository.findByStatus  (status, pageable);
         return leads.map(this::convertToResponse);
     }
 

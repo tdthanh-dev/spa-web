@@ -36,6 +36,10 @@ export default function CustomerProfilePage({ userRole, customerId: customerIdPr
     customerId,
   } = useCustomerProfile(userRole, customerIdProp);
 
+  // ✅ Thêm state để quản lý panel ảnh
+  const [showPhotosPanel, setShowPhotosPanel] = useState(false);
+  const [selectedCaseForPhotos, setSelectedCaseForPhotos] = useState(null);
+
   const normalizedTreatments = useMemo(
     () =>
       (tabData.treatments || []).map((t) => ({
@@ -70,6 +74,18 @@ export default function CustomerProfilePage({ userRole, customerId: customerIdPr
     [normalizedTreatments.length, tabData.financial]
   );
 
+  // ✅ Hàm xử lý mở panel ảnh
+  const handleOpenCasePhotos = (caseData) => {
+    setSelectedCaseForPhotos(caseData);
+    setShowPhotosPanel(true);
+  };
+
+  // ✅ Hàm quay lại panel treatments
+  const handleBackToTreatments = () => {
+    setShowPhotosPanel(false);
+    setSelectedCaseForPhotos(null);
+  };
+
   if (loading) return <div className="p-6 text-gray-500">Đang tải...</div>;
   if (error) return <div className="p-6 text-red-600">{error}</div>;
   if (!customer) return <div className="p-6 text-gray-600">Không tìm thấy khách hàng</div>;
@@ -91,57 +107,80 @@ export default function CustomerProfilePage({ userRole, customerId: customerIdPr
 
       {/* Nội dung */}
       <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        {activeTab === "overview" && (
-          <OverviewPanel
-            customer={customer}
-            stats={stats}
-            formatDateTimeVN={formatDateTimeVN}
-            formatCurrency={formatCurrency}
-          />
-        )}
-
-        {activeTab === "treatments" && (
-          <TreatmentsPanel
-            loading={tabLoading.treatments}
-            treatments={normalizedTreatments}
-            onCreateCase={() => setShowCaseCreationModal(true)}
-            onCreateInvoiceForCase={(c) => {
-              setSelectedCaseForInvoice(c);
-              setShowInvoiceCreationModal(true);
-            }}
-            onViewCaseDetail={(c) => console.log("Chi tiết:", c)}
-            formatDateTimeVN={formatDateTimeVN}
-          />
-        )}
-
-        {activeTab === "appointments" && (
-          <AppointmentsPanel
-            loading={tabLoading.appointments}
-            appointments={tabData.appointments || []}
-            formatDateTimeVN={formatDateTimeVN}
-            getStatusBadge={getStatusBadge}
-          />
-        )}
-
-        {activeTab === "financial" && (
-          <FinancialPanel
-            loading={tabLoading.financial}
-            items={tabData.financial || []}
-            onCreateInvoice={() => setShowInvoiceCreationModal(true)}
-            formatDateTimeVN={formatDateTimeVN}
-            formatCurrency={formatCurrency}
-            getStatusBadge={getStatusBadge}
-          />
-        )}
-
-        {activeTab === "photos" && (
+        {/* ✅ Hiển thị PhotosPanel khi showPhotosPanel = true */}
+        {showPhotosPanel && selectedCaseForPhotos ? (
           <PhotosPanel
-            loading={tabLoading.photos}
-            photos={tabData.photos || []}
+            loading={false}
+            caseInfo={{
+              caseId: selectedCaseForPhotos.caseId || selectedCaseForPhotos.id,
+              serviceName: selectedCaseForPhotos.serviceName,
+              status: selectedCaseForPhotos.status,
+              startDate: selectedCaseForPhotos.startDate,
+              endDate: selectedCaseForPhotos.endDate,
+              intakeNote: selectedCaseForPhotos.intakeNote,
+            }}
+            // ✅ Bỏ photos={[]} để component tự gọi API
+            onBack={handleBackToTreatments}
             onOpenUpload={() => console.log("Upload modal")}
             onDeletePhoto={(id) => console.log("Xóa ảnh", id)}
             formatDateTimeVN={formatDateTimeVN}
           />
+        ) : (
+          <>
+            {activeTab === "overview" && (
+              <OverviewPanel
+                customer={customer}
+                stats={stats}
+                formatDateTimeVN={formatDateTimeVN}
+                formatCurrency={formatCurrency}
+              />
+            )}
+
+            {activeTab === "treatments" && (
+              <TreatmentsPanel
+                loading={tabLoading.treatments}
+                treatments={normalizedTreatments}
+                onCreateCase={() => setShowCaseCreationModal(true)}
+                onCreateInvoiceForCase={(c) => {
+                  setSelectedCaseForInvoice(c);
+                  setShowInvoiceCreationModal(true);
+                }}
+                onViewCaseDetail={(c) => console.log("Chi tiết:", c)}
+                onOpenCasePhotos={handleOpenCasePhotos} // ✅ Truyền callback
+                formatDateTimeVN={formatDateTimeVN}
+              />
+            )}
+
+            {activeTab === "appointments" && (
+              <AppointmentsPanel
+                loading={tabLoading.appointments}
+                appointments={tabData.appointments || []}
+                formatDateTimeVN={formatDateTimeVN}
+                getStatusBadge={getStatusBadge}
+              />
+            )}
+
+            {activeTab === "financial" && (
+              <FinancialPanel
+                loading={tabLoading.financial}
+                items={tabData.financial || []}
+                onCreateInvoice={() => setShowInvoiceCreationModal(true)}
+                formatDateTimeVN={formatDateTimeVN}
+                formatCurrency={formatCurrency}
+                getStatusBadge={getStatusBadge}
+              />
+            )}
+
+            {activeTab === "photos" && (
+              <PhotosPanel
+                loading={tabLoading.photos}
+                photos={tabData.photos || []}
+                onOpenUpload={() => console.log("Upload modal")}
+                onDeletePhoto={(id) => console.log("Xóa ảnh", id)}
+                formatDateTimeVN={formatDateTimeVN}
+              />
+            )}
+          </>
         )}
       </div>
 

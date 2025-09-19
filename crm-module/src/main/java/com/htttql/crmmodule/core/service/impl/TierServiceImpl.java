@@ -1,9 +1,10 @@
-package com.htttql.crmmodule.core.service;
+package com.htttql.crmmodule.core.service.impl;
 
 import com.htttql.crmmodule.core.dto.TierRequest;
 import com.htttql.crmmodule.core.dto.TierResponse;
 import com.htttql.crmmodule.core.entity.Tier;
 import com.htttql.crmmodule.core.repository.ITierRepository;
+import com.htttql.crmmodule.core.service.ITierService;
 import com.htttql.crmmodule.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

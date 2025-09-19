@@ -54,4 +54,9 @@ public interface IAppointmentService {
      * Get technician's appointments
      */
     Page<AppointmentResponse> getTechnicianAppointments(Long technicianId, int page, int size);
+
+    /**
+     * Get customer's appointments
+     */
+    Page<AppointmentResponse> getCustomerAppointments(Long customerId, int page, int size);
 }

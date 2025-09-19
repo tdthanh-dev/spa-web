@@ -1,6 +1,5 @@
 package com.htttql.crmmodule.service.service;
 
-import com.htttql.crmmodule.service.dto.*;
 import com.htttql.crmmodule.common.enums.AppointmentStatus;
 import com.htttql.crmmodule.core.repository.ICustomerRepository;
 import com.htttql.crmmodule.lead.repository.IAppointmentRepository;
@@ -13,502 +12,208 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 @Service("dashboardService")
 @RequiredArgsConstructor
 public class DashboardServiceImpl implements IDashboardService {
 
-        private final ICustomerRepository customerRepository;
-        private final IAppointmentRepository appointmentRepository;
-        private final ILeadRepository leadRepository;
-        private final IInvoiceRepository invoiceRepository;
-        private final IServiceRepository serviceRepository;
+    private final ICustomerRepository customerRepository;
+    private final IAppointmentRepository appointmentRepository;
+    private final ILeadRepository leadRepository;
+    private final IInvoiceRepository invoiceRepository;
+    private final IServiceRepository serviceRepository;
 
-        @Override
-        @Transactional(readOnly = true)
-        public ReceptionistDashboardStats getReceptionistDashboardStats() {
-                LocalDate today = LocalDate.now();
-                LocalDateTime startOfToday = today.atStartOfDay();
-                LocalDateTime endOfToday = today.atTime(23, 59, 59);
-                LocalDate weekStart = today.minusDays(6);
-                LocalDate monthStart = today.minusDays(29);
+    private static long toLong(BigDecimal v) {
+        return v == null ? 0L : v.longValue();
+    }
 
-                try {
-                        long todayAppointments = appointmentRepository.countByDate(today);                long todayCheckIns = appointmentRepository.countByDateAndStatus(today, AppointmentStatus.DONE);
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> getReceptionistDashboardStats() {
+        Map<String, Long> m = new LinkedHashMap<>();
 
-                long todayCompleted = appointmentRepository.countByDateAndStatus(today, AppointmentStatus.DONE);
+        LocalDate today = LocalDate.now();
+        LocalDateTime endOfToday = today.atTime(23, 59, 59);
+        LocalDate weekStart = today.minusDays(6);
+        LocalDate monthStart = today.minusDays(29);
 
-                long todayNoShows = appointmentRepository.countByDateAndStatus(today, AppointmentStatus.CANCELLED);
+        try {
+            // Today
+            long todayAppointments = appointmentRepository.countByDate(today);
+            long todayDone        = appointmentRepository.countByDateAndStatus(today, AppointmentStatus.DONE);
+            long todayCancelled   = appointmentRepository.countByDateAndStatus(today, AppointmentStatus.CANCELLED);
+            long todayNewCustomers= customerRepository.countByCreatedDate(today);
 
-                long pendingRequests = leadRepository.findAll().stream()
-                                .filter(lead -> "NEW".equals(lead.getStatus()))
-                                .count();
+            // Leads pending (NEW)
+            long pendingRequests  = leadRepository.findAll().stream()
+                    .filter(l -> "NEW".equals(l.getStatus())).count();
 
-                long newCustomersToday = customerRepository.countByCreatedDate(today);
+            // Week
+            LocalDateTime weekStartTime = weekStart.atStartOfDay();
+            long weekAppointments = appointmentRepository.countByDateRange(weekStartTime, endOfToday);
+            long weekNewCustomers = customerRepository.countByCreatedDateBetween(weekStartTime, endOfToday);
 
-                LocalDateTime weekStartTime = weekStart.atStartOfDay();
-                long weekAppointments = appointmentRepository.countByDateRange(weekStartTime, endOfToday);
+            // Month
+            LocalDateTime monthStartTime = monthStart.atStartOfDay();
+            long monthAppointments = appointmentRepository.countByDateRange(monthStartTime, endOfToday);
+            long monthNewCustomers = customerRepository.countByCreatedDateBetween(monthStartTime, endOfToday);
 
-                BigDecimal weekRevenue = invoiceRepository.sumRevenueByDateRange(weekStartTime, endOfToday);
+            // Totals / actives
+            long totalCustomers    = customerRepository.count();
+            long activeCustomers   = appointmentRepository.countActiveCustomersInDateRange(monthStartTime, endOfToday);
 
-                long weekNewCustomers = customerRepository.countByCreatedDateBetween(weekStartTime, endOfToday);
+            // By status (global)
+            long scheduled  = appointmentRepository.countByStatus(AppointmentStatus.SCHEDULED);
+            long confirmed  = appointmentRepository.countByStatus(AppointmentStatus.CONFIRMED);
+        //     long inProgress = appointmentRepository.countByStatus(AppointmentStatus.IN_PROGRESS);
+            long completed  = appointmentRepository.countByStatus(AppointmentStatus.DONE);
+            long cancelled  = appointmentRepository.countByStatus(AppointmentStatus.CANCELLED);
 
-                LocalDateTime monthStartTime = monthStart.atStartOfDay();
-                long monthAppointments = appointmentRepository.countByDateRange(monthStartTime, endOfToday);
+            m.put("todayAppointments", todayAppointments);
+            m.put("todayCompleted",    todayDone);
+            m.put("todayNoShows",      todayCancelled); // nếu có trạng thái NO_SHOW riêng thì thay bằng count tương ứng
+            m.put("pendingRequests",   pendingRequests);
+            m.put("newCustomersToday", todayNewCustomers);
 
-                BigDecimal monthRevenue = invoiceRepository.sumRevenueByDateRange(monthStartTime, endOfToday);
+            m.put("weekAppointments",  weekAppointments);
+            m.put("weekNewCustomers",  weekNewCustomers);
 
-                long monthNewCustomers = customerRepository.countByCreatedDateBetween(monthStartTime, endOfToday);
+            m.put("monthAppointments", monthAppointments);
+            m.put("monthNewCustomers", monthNewCustomers);
 
-                        BigDecimal averageAppointmentValue = invoiceRepository.findAll().stream()
-                                        .map(inv -> inv.getTotalAmount())
-                                        .reduce(BigDecimal.ZERO, BigDecimal::add)
-                                        .divide(BigDecimal.valueOf(Math.max(1, appointmentRepository.count())),
-                                                        RoundingMode.HALF_UP);
+            m.put("totalCustomers",    totalCustomers);
+            m.put("activeCustomers",   activeCustomers);
 
-                        long totalCustomers = customerRepository.count();
-                        long returningCustomers = appointmentRepository.countReturningCustomers();
-                        double customerRetentionRate = totalCustomers > 0
-                                        ? (double) returningCustomers / totalCustomers * 100
-                                        : 0;
+            m.put("scheduled",         scheduled);
+            m.put("confirmed",         confirmed);
+            // m.put("inProgress",        inProgress);
+            m.put("completed",         completed);
+            m.put("cancelled",         cancelled);
 
-                        long activeCustomers = appointmentRepository.countActiveCustomersInDateRange(monthStartTime, endOfToday);
-
-                        long scheduledAppointments = appointmentRepository.findAll().stream()
-                                        .filter(apt -> apt.getStatus() != null
-                                                        && "SCHEDULED".equals(apt.getStatus().name()))
-                                        .count();
-
-                        long confirmedAppointments = appointmentRepository.findAll().stream()
-                                        .filter(apt -> apt.getStatus() != null
-                                                        && "CONFIRMED".equals(apt.getStatus().name()))
-                                        .count();
-
-                        long inProgressAppointments = appointmentRepository.findAll().stream()
-                                        .filter(apt -> apt.getStatus() != null
-                                                        && "IN_PROGRESS".equals(apt.getStatus().name()))
-                                        .count();
-
-                        long completedAppointments = appointmentRepository.findAll().stream()
-                                        .filter(apt -> apt.getStatus() != null
-                                                        && "COMPLETED".equals(apt.getStatus().name()))
-                                        .count();
-
-                        long cancelledAppointments = appointmentRepository.findAll().stream()
-                                        .filter(apt -> apt.getStatus() != null
-                                                        && "CANCELLED".equals(apt.getStatus().name()))
-                                        .count();
-
-                        return ReceptionistDashboardStats.builder()
-                                        .todayAppointments((int) todayAppointments)
-                                        .todayCheckIns((int) todayCheckIns)
-                                        .todayCompleted((int) todayCompleted)
-                                        .todayNoShows((int) todayNoShows)
-                                        .pendingRequests((int) pendingRequests)
-                                        .newCustomersToday((int) newCustomersToday)
-                                        .weekAppointments((int) weekAppointments)
-                                        .weekRevenue(weekRevenue.intValue())
-                                        .weekNewCustomers((int) weekNewCustomers)
-                                        .monthAppointments((int) monthAppointments)
-                                        .monthRevenue(monthRevenue.intValue())
-                                        .monthNewCustomers((int) monthNewCustomers)
-                                        .averageAppointmentValue(averageAppointmentValue)
-                                        .customerRetentionRate(customerRetentionRate)
-                                        .activeCustomers((int) activeCustomers)
-                                        .totalCustomers((int) totalCustomers)
-                                        .scheduledAppointments((int) scheduledAppointments)
-                                        .confirmedAppointments((int) confirmedAppointments)
-                                        .inProgressAppointments((int) inProgressAppointments)
-                                        .completedAppointments((int) completedAppointments)
-                                        .cancelledAppointments((int) cancelledAppointments)
-                                        .build();
-
-                } catch (Exception e) {
-                        log.error("Error calculating dashboard stats", e);
-                        // Return mock data as fallback
-                        return ReceptionistDashboardStats.builder()
-                                        .todayAppointments(8)
-                                        .todayCheckIns(5)
-                                        .todayCompleted(3)
-                                        .todayNoShows(1)
-                                        .pendingRequests(4)
-                                        .newCustomersToday(2)
-                                        .weekAppointments(45)
-                                        .weekRevenue(12500000)
-                                        .weekNewCustomers(8)
-                                        .monthAppointments(180)
-                                        .monthRevenue(52000000)
-                                        .monthNewCustomers(25)
-                                        .averageAppointmentValue(new BigDecimal("350000"))
-                                        .customerRetentionRate(85.5)
-                                        .activeCustomers(145)
-                                        .totalCustomers(320)
-                                        .scheduledAppointments(12)
-                                        .confirmedAppointments(8)
-                                        .inProgressAppointments(3)
-                                        .completedAppointments(25)
-                                        .cancelledAppointments(2)
-                                        .build();
-                }
+            return m;
+        } catch (Exception e) {
+            log.error("Error calculating receptionist dashboard counts", e);
+            // fallback đơn giản
+            m.put("todayAppointments", 8L);
+            m.put("todayCompleted",    3L);
+            m.put("todayNoShows",      1L);
+            m.put("pendingRequests",   4L);
+            m.put("newCustomersToday", 2L);
+            m.put("weekAppointments",  45L);
+            m.put("weekNewCustomers",  8L);
+            m.put("monthAppointments", 180L);
+            m.put("monthNewCustomers", 25L);
+            m.put("totalCustomers",    320L);
+            m.put("activeCustomers",   145L);
+            m.put("scheduled",         12L);
+            m.put("confirmed",         8L);
+            m.put("inProgress",        3L);
+            m.put("completed",         25L);
+            m.put("cancelled",         2L);
+            return m;
         }
+    }
 
-        @Override
-        @Transactional(readOnly = true)
-        public List<ChartDataPoint> getAppointmentStatusChart() {
-                List<ChartDataPoint> data = new ArrayList<>();
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> getAppointmentStatusChart() {
+        Map<String, Long> m = new LinkedHashMap<>();
+        // Chỉ số theo trạng thái
+        m.put("scheduled",  appointmentRepository.countByStatus(AppointmentStatus.SCHEDULED));
+        m.put("confirmed",  appointmentRepository.countByStatus(AppointmentStatus.CONFIRMED));
+        // m.put("inProgress", appointmentRepository.countByStatus(AppointmentStatus.IN_PROGRESS));
+        m.put("completed",  appointmentRepository.countByStatus(AppointmentStatus.DONE));
+        m.put("cancelled",  appointmentRepository.countByStatus(AppointmentStatus.CANCELLED));
+        return m;
+    }
 
-                // Query real data from database
-                long scheduledCount = appointmentRepository.countByStatus(AppointmentStatus.SCHEDULED);
-                long confirmedCount = appointmentRepository.countByStatus(AppointmentStatus.CONFIRMED);
-                long inProgressCount = appointmentRepository.countByStatus(AppointmentStatus.CONFIRMED); // Assuming CONFIRMED = IN_PROGRESS
-                long completedCount = appointmentRepository.countByStatus(AppointmentStatus.DONE);
-                long cancelledCount = appointmentRepository.countByStatus(AppointmentStatus.CANCELLED);
-
-                data.add(ChartDataPoint.builder()
-                                .label("Đã đặt lịch")
-                                .category("SCHEDULED")
-                                .count((int) scheduledCount)
-                                .color("#dbeafe")
-                                .build());
-                data.add(ChartDataPoint.builder()
-                                .label("Đã xác nhận")
-                                .category("CONFIRMED")
-                                .count((int) confirmedCount)
-                                .color("#dcfce7")
-                                .build());
-                data.add(ChartDataPoint.builder()
-                                .label("Đang thực hiện")
-                                .category("IN_PROGRESS")
-                                .count((int) inProgressCount)
-                                .color("#e0e7ff")
-                                .build());
-                data.add(ChartDataPoint.builder()
-                                .label("Hoàn thành")
-                                .category("COMPLETED")
-                                .count((int) completedCount)
-                                .color("#d1fae5")
-                                .build());
-                data.add(ChartDataPoint.builder()
-                                .label("Đã hủy")
-                                .category("CANCELLED")
-                                .count((int) cancelledCount)
-                                .color("#fee2e2")
-                                .build());
-                return data;
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> getAppointmentTrendChart() {
+        // 7 ngày gần nhất: oldest -> newest
+        List<Long> counts = new ArrayList<>(7);
+        for (int i = 6; i >= 0; i--) {
+            LocalDate date = LocalDate.now().minusDays(i);
+            counts.add(appointmentRepository.countByDate(date));
         }
+        return counts;
+    }
 
-        @Override
-        @Transactional(readOnly = true)
-        public List<ChartDataPoint> getAppointmentTrendChart() {
-                List<ChartDataPoint> data = new ArrayList<>();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM");
-
-                // Query real appointment data for the last 7 days
-                for (int i = 6; i >= 0; i--) {
-                        LocalDate date = LocalDate.now().minusDays(i);
-                        LocalDateTime dayStart = date.atStartOfDay();
-                        LocalDateTime dayEnd = date.atTime(23, 59, 59);
-
-                        // Count appointments for this specific day
-                        long appointmentsCount = appointmentRepository.countByDate(date);
-
-                        data.add(ChartDataPoint.builder()
-                                        .label(date.format(formatter))
-                                        .date(date.toString())
-                                        .count((int) appointmentsCount)
-                                        .color("#3b82f6")
-                                        .build());
-                }
-                return data;
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> getCustomerTiersChart() {
+        Map<String, Long> m = new LinkedHashMap<>();
+        try {
+            m.put("REGULAR", customerRepository.countByTierCode("REGULAR"));
+            m.put("SILVER",  customerRepository.countByTierCode("SILVER"));
+            m.put("GOLD",    customerRepository.countByTierCode("GOLD"));
+            m.put("VIP",     customerRepository.countByTierCode("VIP"));
+            long none = customerRepository.countByTierIsNull();
+            if (none > 0) m.put("NONE", none);
+        } catch (Exception e) {
+            log.error("Error fetching customer tier counts", e);
+            // fallback
+            m.put("REGULAR", 180L);
+            m.put("SILVER",   95L);
+            m.put("GOLD",     35L);
+            m.put("VIP",      10L);
         }
+        return m;
+    }
 
-        @Override
-        @Transactional(readOnly = true)
-        public List<ChartDataPoint> getServicePopularityChart() {
-                List<ChartDataPoint> data = new ArrayList<>();
-
-                try {
-                        // Get all services and count appointments for each service using repository methods
-                        serviceRepository.findAll().forEach(service -> {
-                                long appointmentCount = appointmentRepository.countByService_ServiceId(service.getServiceId());
-                                // Only include services that have appointments
-                                if (appointmentCount > 0) {
-                                        String category = service.getCategory() != null ? service.getCategory().name()
-                                                        : "GENERAL";
-                                        data.add(ChartDataPoint.builder()
-                                                        .label(service.getName())
-                                                        .category(category)
-                                                        .count((int) appointmentCount)
-                                                        .color(getServiceColor(category))
-                                                        .build());
-                                }
-                        });
-
-                        // If no data found, return sample data
-                        if (data.isEmpty()) {
-                                data.add(ChartDataPoint.builder()
-                                                .label("Lips Enhancement")
-                                                .category("LIP")
-                                                .count(0)
-                                                .color("#ec4899")
-                                                .build());
-                                data.add(ChartDataPoint.builder()
-                                                .label("Eyebrow Microblading")
-                                                .category("BROW")
-                                                .count(0)
-                                                .color("#8b5cf6")
-                                                .build());
-                                data.add(ChartDataPoint.builder()
-                                                .label("Facial Treatment")
-                                                .category("FACE")
-                                                .count(0)
-                                                .color("#06b6d4")
-                                                .build());
-                                data.add(ChartDataPoint.builder()
-                                                .label("Body Care")
-                                                .category("BODY")
-                                                .count(0)
-                                                .color("#10b981")
-                                                .build());
-                        }
-                } catch (Exception e) {
-                        log.error("Error fetching service popularity data", e);
-                        // Return sample data as fallback
-                        data.add(ChartDataPoint.builder()
-                                        .label("Lips Enhancement")
-                                        .category("LIP")
-                                        .count(0)
-                                        .color("#ec4899")
-                                        .build());
-                        data.add(ChartDataPoint.builder()
-                                        .label("Eyebrow Microblading")
-                                        .category("BROW")
-                                        .count(0)
-                                        .color("#8b5cf6")
-                                        .build());
-                        data.add(ChartDataPoint.builder()
-                                        .label("Facial Treatment")
-                                        .category("FACE")
-                                        .count(0)
-                                        .color("#06b6d4")
-                                        .build());
-                        data.add(ChartDataPoint.builder()
-                                        .label("Body Care")
-                                        .category("BODY")
-                                        .count(0)
-                                        .color("#10b981")
-                                        .build());
-                }
-
-                return data;
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> getRevenueTrendChart() {
+        // 30 ngày gần nhất (VND) oldest -> newest
+        List<Long> rev = new ArrayList<>(30);
+        for (int i = 29; i >= 0; i--) {
+            LocalDate date = LocalDate.now().minusDays(i);
+            rev.add(toLong(invoiceRepository.sumRevenueByDate(date)));
         }
+        return rev;
+    }
 
-        private String getServiceColor(String category) {
-                if (category == null)
-                        return "#6b7280";
-                switch (category.toUpperCase()) {
-                        case "LIP":
-                                return "#ec4899";
-                        case "BROW":
-                                return "#8b5cf6";
-                        case "FACE":
-                                return "#06b6d4";
-                        case "BODY":
-                                return "#10b981";
-                        case "NAIL":
-                                return "#f59e0b";
-                        case "EYELASH":
-                                return "#84cc16";
-                        default:
-                                return "#6b7280";
-                }
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> getMonthlyPerformance() {
+        Map<String, Long> m = new LinkedHashMap<>();
+        LocalDateTime monthStart = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        LocalDateTime monthEnd   = monthStart.plusMonths(1).minusNanos(1);
+
+        try {
+            long totalAppointments   = appointmentRepository.countByDateRange(monthStart, monthEnd);
+            long completed           = appointmentRepository.countByDateRangeAndStatus(monthStart, monthEnd, AppointmentStatus.DONE);
+            long cancelled           = appointmentRepository.countByDateRangeAndStatus(monthStart, monthEnd, AppointmentStatus.CANCELLED);
+            long totalRevenue        = toLong(invoiceRepository.sumRevenueByDateRange(monthStart, monthEnd));
+            long newCustomers        = customerRepository.countByCreatedDateBetween(monthStart, monthEnd);
+
+            // returningCustomers (>=2 lịch hẹn)
+            long returningCustomers  = customerRepository.findAll().stream()
+                    .filter(c -> appointmentRepository.findByCustomer_CustomerId(c.getCustomerId()).size() > 1)
+                    .count();
+
+            m.put("totalAppointments", totalAppointments);
+            m.put("completedAppointments", completed);
+            m.put("cancelledAppointments", cancelled);
+            m.put("totalRevenue", totalRevenue);
+            m.put("newCustomers", newCustomers);
+            m.put("returningCustomers", returningCustomers);
+
+            return m;
+        } catch (Exception e) {
+            log.error("Error calculating monthly performance counts", e);
+            // fallback
+            m.put("totalAppointments", 180L);
+            m.put("completedAppointments", 165L);
+            m.put("cancelledAppointments", 15L);
+            m.put("totalRevenue", 52_000_000L);
+            m.put("newCustomers", 25L);
+            m.put("returningCustomers", 155L);
+            return m;
         }
-
-        @Override
-        @Transactional(readOnly = true)
-        public List<ChartDataPoint> getCustomerTiersChart() {
-                List<ChartDataPoint> data = new ArrayList<>();
-
-                try {
-                        // Query customer counts by tier
-                        long regularCount = customerRepository.countByTierCode("REGULAR");
-                        long silverCount = customerRepository.countByTierCode("SILVER");
-                        long goldCount = customerRepository.countByTierCode("GOLD");
-                        long vipCount = customerRepository.countByTierCode("VIP");
-
-                        // Count customers without tier (null tier)
-                        long noTierCount = customerRepository.countByTierIsNull();
-
-                        data.add(ChartDataPoint.builder()
-                                        .label("Regular")
-                                        .category("REGULAR")
-                                        .count((int) regularCount)
-                                        .color("#6b7280")
-                                        .build());
-                        data.add(ChartDataPoint.builder()
-                                        .label("Silver")
-                                        .category("SILVER")
-                                        .count((int) silverCount)
-                                        .color("#9ca3af")
-                                        .build());
-                        data.add(ChartDataPoint.builder()
-                                        .label("Gold")
-                                        .category("GOLD")
-                                        .count((int) goldCount)
-                                        .color("#fbbf24")
-                                        .build());
-                        data.add(ChartDataPoint.builder()
-                                        .label("VIP")
-                                        .category("VIP")
-                                        .count((int) vipCount)
-                                        .color("#f59e0b")
-                                        .build());
-
-                        // Include customers without tier if any
-                        if (noTierCount > 0) {
-                                data.add(ChartDataPoint.builder()
-                                                .label("Chưa phân hạng")
-                                                .category("NONE")
-                                                .count((int) noTierCount)
-                                                .color("#d1d5db")
-                                                .build());
-                        }
-                } catch (Exception e) {
-                        log.error("Error fetching customer tiers data", e);
-                        // Return sample data as fallback
-                        data.add(ChartDataPoint.builder()
-                                        .label("Regular")
-                                        .category("REGULAR")
-                                        .count(180)
-                                        .color("#6b7280")
-                                        .build());
-                        data.add(ChartDataPoint.builder()
-                                        .label("Silver")
-                                        .category("SILVER")
-                                        .count(95)
-                                        .color("#9ca3af")
-                                        .build());
-                        data.add(ChartDataPoint.builder()
-                                        .label("Gold")
-                                        .category("GOLD")
-                                        .count(35)
-                                        .color("#fbbf24")
-                                        .build());
-                        data.add(ChartDataPoint.builder()
-                                        .label("VIP")
-                                        .category("VIP")
-                                        .count(10)
-                                        .color("#f59e0b")
-                                        .build());
-                }
-
-                return data;
-        }
-
-        @Override
-        @Transactional(readOnly = true)
-        public List<ChartDataPoint> getRevenueTrendChart() {
-                List<ChartDataPoint> data = new ArrayList<>();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM");
-
-                // Query real revenue data for the last 30 days
-                for (int i = 29; i >= 0; i--) {
-                        LocalDate date = LocalDate.now().minusDays(i);
-
-                        // Calculate revenue for this specific day from invoices
-                        BigDecimal dailyRevenue = invoiceRepository.sumRevenueByDate(date);
-
-                        data.add(ChartDataPoint.builder()
-                                        .label(date.format(formatter))
-                                        .date(date.toString())
-                                        .value(dailyRevenue)
-                                        .color("#10b981")
-                                        .build());
-                }
-                return data;
-        }
-
-        @Override
-        @Transactional(readOnly = true)
-        public MonthlyPerformance getMonthlyPerformance() {
-                LocalDate currentMonth = LocalDate.now().withDayOfMonth(1);
-                LocalDateTime monthStart = currentMonth.atStartOfDay();
-                LocalDateTime monthEnd = currentMonth.plusMonths(1).atStartOfDay().minusNanos(1);
-
-                try {
-                        // Query appointments for current month
-                        long totalAppointments = appointmentRepository.countByDateRange(monthStart, monthEnd);
-
-                        // Count completed and cancelled appointments
-                        long completedAppointments = appointmentRepository.countByDateRangeAndStatus(monthStart, monthEnd, AppointmentStatus.DONE);
-                        long cancelledAppointments = appointmentRepository.countByDateRangeAndStatus(monthStart, monthEnd, AppointmentStatus.CANCELLED);
-
-                        // Calculate total revenue for current month
-                        BigDecimal totalRevenue = invoiceRepository.sumRevenueByDateRange(monthStart, monthEnd);
-
-                        // Calculate average revenue per appointment
-                        BigDecimal averageRevenuePerAppointment = totalAppointments > 0
-                                        ? totalRevenue.divide(BigDecimal.valueOf(totalAppointments),
-                                                        RoundingMode.HALF_UP)
-                                        : BigDecimal.ZERO;
-
-                        // Count new customers for current month
-                        long newCustomers = customerRepository.countByCreatedDateBetween(monthStart, monthEnd);
-
-                        // Calculate returning customers (customers with multiple appointments)
-                        long returningCustomers = customerRepository.findAll().stream()
-                                        .filter(cust -> appointmentRepository
-                                                        .findByCustomer_CustomerId(cust.getCustomerId()).size() > 1)
-                                        .count();
-
-                        // Calculate customer acquisition cost (simplified)
-                        BigDecimal customerAcquisitionCost = newCustomers > 0
-                                        ? totalRevenue.divide(BigDecimal.valueOf(newCustomers), RoundingMode.HALF_UP)
-                                        : BigDecimal.ZERO;
-
-                        // Customer satisfaction score (placeholder - would need actual survey data)
-                        double customerSatisfactionScore = 4.5;
-
-                        // Staff utilization rate (placeholder - would need staff working hours data)
-                        int staffUtilizationRate = 85;
-
-                        return MonthlyPerformance.builder()
-                                        .month(currentMonth)
-                                        .totalAppointments((int) totalAppointments)
-                                        .completedAppointments((int) completedAppointments)
-                                        .cancelledAppointments((int) cancelledAppointments)
-                                        .totalRevenue(totalRevenue)
-                                        .averageRevenuePerAppointment(averageRevenuePerAppointment)
-                                        .newCustomers((int) newCustomers)
-                                        .returningCustomers((int) returningCustomers)
-                                        .customerAcquisitionCost(customerAcquisitionCost)
-                                        .customerSatisfactionScore(customerSatisfactionScore)
-                                        .staffUtilizationRate(staffUtilizationRate)
-                                        .build();
-
-                } catch (Exception e) {
-                        log.error("Error calculating monthly performance", e);
-                        // Return mock data as fallback
-                        return MonthlyPerformance.builder()
-                                        .month(currentMonth)
-                                        .totalAppointments(180)
-                                        .completedAppointments(165)
-                                        .cancelledAppointments(15)
-                                        .totalRevenue(new BigDecimal("52000000"))
-                                        .averageRevenuePerAppointment(new BigDecimal("288889"))
-                                        .newCustomers(25)
-                                        .returningCustomers(155)
-                                        .customerAcquisitionCost(new BigDecimal("120000"))
-                                        .customerSatisfactionScore(4.5)
-                                        .staffUtilizationRate(85)
-                                        .build();
-                }
-        }
+    }
 }

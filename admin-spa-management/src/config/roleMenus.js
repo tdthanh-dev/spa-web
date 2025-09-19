@@ -74,7 +74,7 @@ export const ROLE_MENUS = {
       id: 'permissions',
       label: 'Phân quyền',
       iconClass: 'fas fa-shield-alt',
-      component: 'PermissionsDemo',
+      component: 'Permissions',
       path: '/admin/permissions'
     },
     {

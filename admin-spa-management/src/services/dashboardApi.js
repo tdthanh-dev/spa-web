@@ -2,95 +2,74 @@ import apiClient from './apiClient'
 import { extractApiResponse } from '@/utils/apiUtils'
 import { API_ENDPOINTS } from '@/config/constants'
 
-// Dashboard Statistics API
 export const dashboardApi = {
-    // Receptionist Dashboard Stats
-    async getReceptionistStats() {
-        const response = await apiClient.get(`${API_ENDPOINTS.DASHBOARD}/receptionist/stats`)
-        return extractApiResponse(response)
-    },
+  async getReceptionistStats() {
+    const res = await apiClient.get(`${API_ENDPOINTS.DASHBOARD}/receptionist/stats`)
+    return extractApiResponse(res) // Map<String, Long>
+  },
 
-    // Charts Data
-    async getAppointmentStatusChart() {
-        const response = await apiClient.get(`${API_ENDPOINTS.DASHBOARD}/charts/appointment-status`)
-        return extractApiResponse(response)
-    },
+  async getAppointmentStatusChart() {
+    const res = await apiClient.get(`${API_ENDPOINTS.DASHBOARD}/charts/appointment-status`)
+    return extractApiResponse(res) // Map<String, Long>
+  },
 
-    async getAppointmentTrendChart() {
-        const response = await apiClient.get(`${API_ENDPOINTS.DASHBOARD}/charts/appointment-trend`)
-        return extractApiResponse(response)
-    },
+  async getAppointmentTrendChart() {
+    const res = await apiClient.get(`${API_ENDPOINTS.DASHBOARD}/charts/appointment-trend`)
+    return extractApiResponse(res) // List<Long> (7 phần tử)
+  },
 
-    async getServicePopularityChart() {
-        const response = await apiClient.get(`${API_ENDPOINTS.DASHBOARD}/charts/service-popularity`)
-        return extractApiResponse(response)
-    },
+  async getCustomerTiersChart() {
+    const res = await apiClient.get(`${API_ENDPOINTS.DASHBOARD}/charts/customer-tiers`)
+    return extractApiResponse(res) // Map<String, Long>
+  },
 
-    async getCustomerTiersChart() {
-        const response = await apiClient.get(`${API_ENDPOINTS.DASHBOARD}/charts/customer-tiers`)
-        return extractApiResponse(response)
-    },
+  async getRevenueTrendChart() {
+    const res = await apiClient.get(`${API_ENDPOINTS.DASHBOARD}/charts/revenue-trend`)
+    return extractApiResponse(res) // List<Long> (30 phần tử)
+  },
 
-    async getRevenueTrendChart() {
-        const response = await apiClient.get(`${API_ENDPOINTS.DASHBOARD}/charts/revenue-trend`)
-        return extractApiResponse(response)
-    },
+  async getMonthlyPerformance() {
+    const res = await apiClient.get(`${API_ENDPOINTS.DASHBOARD}/performance/monthly`)
+    return extractApiResponse(res) // Map<String, Long>
+  },
 
-    // Performance Metrics
-    async getMonthlyPerformance() {
-        const response = await apiClient.get(`${API_ENDPOINTS.DASHBOARD}/performance/monthly`)
-        return extractApiResponse(response)
-    },
+  async getDashboardData() {
+    try {
+      const [
+        stats,
+        statusMap,
+        trend7,
+        tiersMap,
+        revenue30,
+        monthly
+      ] = await Promise.all([
+        this.getReceptionistStats(),
+        this.getAppointmentStatusChart(),
+        this.getAppointmentTrendChart(),
+        this.getCustomerTiersChart(),
+        this.getRevenueTrendChart(),
+        this.getMonthlyPerformance()
+      ])
 
-    // Get all dashboard data at once
-    async getDashboardData() {
-        try {
-            const [
-                receptionistStats,
-                appointmentStatusChart,
-                appointmentTrendChart,
-                servicePopularityChart,
-                customerTiersChart,
-                revenueTrendChart,
-                monthlyPerformance
-            ] = await Promise.all([
-                this.getReceptionistStats(),
-                this.getAppointmentStatusChart(),
-                this.getAppointmentTrendChart(),
-                this.getServicePopularityChart(),
-                this.getCustomerTiersChart(),
-                this.getRevenueTrendChart(),
-                this.getMonthlyPerformance()
-            ])
-
-            // extractApiResponse đã extract data rồi, không cần .data nữa
-            return {
-                stats: receptionistStats || {},
-                charts: {
-                    appointmentStatus: appointmentStatusChart || [],
-                    appointmentTrend: appointmentTrendChart || [],
-                    servicePopularity: servicePopularityChart || [],
-                    customerTiers: customerTiersChart || [],
-                    revenueTrend: revenueTrendChart || []
-                },
-                performance: monthlyPerformance || {}
-            }
-        } catch (error) {
-            console.error('Error fetching dashboard data:', error)
-            // Return empty data structure on error
-            return {
-                stats: {},
-                charts: {
-                    appointmentStatus: [],
-                    appointmentTrend: [],
-                    servicePopularity: [],
-                    customerTiers: [],
-                    revenueTrend: []
-                },
-                performance: {}
-            }
-        }
+      return {
+        stats: stats || {},
+        charts: {
+          appointmentStatus: statusMap || {}, // Map
+          appointmentTrend: trend7 || [],     // List
+          customerTiers: tiersMap || {},      // Map
+          revenueTrend: revenue30 || []       // List
+        },
+        performance: monthly || {}
+      }
+    } catch (e) {
+      console.error('Error fetching dashboard data:', e)
+      return {
+        stats: {},
+        charts: { appointmentStatus: {}, appointmentTrend: [], customerTiers: {}, revenueTrend: [] },
+        performance: {}
+      }
     }
+  }
 }
 
 export default dashboardApi

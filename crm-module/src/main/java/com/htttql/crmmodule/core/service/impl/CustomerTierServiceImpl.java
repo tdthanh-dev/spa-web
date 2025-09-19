@@ -1,4 +1,4 @@
-package com.htttql.crmmodule.core.service;
+package com.htttql.crmmodule.core.service.impl;
 
 import com.htttql.crmmodule.common.enums.TierCode;
 import com.htttql.crmmodule.common.exception.ResourceNotFoundException;
@@ -7,6 +7,8 @@ import com.htttql.crmmodule.core.entity.Customer;
 import com.htttql.crmmodule.core.entity.Tier;
 import com.htttql.crmmodule.core.repository.ICustomerRepository;
 import com.htttql.crmmodule.core.repository.ITierRepository;
+import com.htttql.crmmodule.core.service.ICustomerTierService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -16,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 
 @Slf4j
-@Service("customerTierService")
+@Service
 @RequiredArgsConstructor
 public class CustomerTierServiceImpl implements ICustomerTierService {
 

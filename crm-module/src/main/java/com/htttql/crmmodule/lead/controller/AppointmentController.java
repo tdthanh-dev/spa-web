@@ -122,6 +122,20 @@ public class AppointmentController {
         return ResponseEntity.ok(appointments);
     }
 
+    @Operation(summary = "Get customer's appointments")
+    @SecurityRequirement(name = "Bearer Authentication")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST', 'TECHNICIAN')")
+    @GetMapping("/customer/{customerId}")
+    public ResponseEntity<ApiResponse<PageResponse<AppointmentResponse>>> getCustomerAppointments(
+            @PathVariable Long customerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        Page<AppointmentResponse> appointments = appointmentService.getCustomerAppointments(customerId, page, size);
+        PageResponse<AppointmentResponse> response = PageResponse.from(appointments);
+        return ResponseEntity.ok(ApiResponse.success(response, "Customer appointments retrieved successfully"));
+    }
+
     @Operation(summary = "Update appointment status")
     @SecurityRequirement(name = "Bearer Authentication")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")

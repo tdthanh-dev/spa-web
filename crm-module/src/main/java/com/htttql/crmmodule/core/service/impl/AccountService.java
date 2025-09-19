@@ -1,4 +1,4 @@
-package com.htttql.crmmodule.core.service;
+package com.htttql.crmmodule.core.service.impl;
 
 import com.htttql.crmmodule.common.exception.BadRequestException;
 import com.htttql.crmmodule.common.exception.ResourceNotFoundException;
@@ -6,8 +6,10 @@ import com.htttql.crmmodule.core.dto.AccountDto;
 import com.htttql.crmmodule.core.dto.CreateAccountRequest;
 import com.htttql.crmmodule.core.entity.Role;
 import com.htttql.crmmodule.core.entity.StaffUser;
-import com.htttql.crmmodule.core.repository.RoleRepository;
-import com.htttql.crmmodule.core.repository.StaffUserRepository;
+import com.htttql.crmmodule.core.repository.IRoleRepository;
+import com.htttql.crmmodule.core.repository.IStaffUserRepository;
+import com.htttql.crmmodule.core.service.IAccountService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -24,8 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AccountService implements IAccountService {
 
-    private final StaffUserRepository staffUserRepository;
-    private final RoleRepository roleRepository;
+    private final IStaffUserRepository staffUserRepository;
+    private final IRoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final ModelMapper modelMapper;
 
