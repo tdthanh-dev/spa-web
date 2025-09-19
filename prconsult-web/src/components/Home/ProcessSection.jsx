@@ -4,7 +4,7 @@ const ProcessSection = ({ processSteps }) => {
   return (
     <section className="process-section" id="process">
       <div className="container">
-        <h2 className="section-title" data-aos="fade-up">Quy trình làm đẹp tại Spa Dr Oha</h2>
+        <h2 className="section-title" data-aos="fade-up">Quy trình làm đẹp tại Spa KimKang</h2>
 
         <div className="timeline">
           <div className="timeline-line" data-aos="progress-line"></div>

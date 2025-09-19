@@ -348,13 +348,17 @@ const RequestDetailModalV2 = ({
         </div>
       </div>
 
-      {/* Modal tạo khách hàng */}
-      <CustomerCreationModal
-        isOpen={showCustomerCreationModal}
-        onClose={handleCloseCustomerCreationModal}
-        onCustomerCreated={handleCustomerCreated}
-        leadData={request}
-      />
+      {/* Modal tạo khách hàng - z-index cao hơn để hiển thị trên cùng */}
+      {showCustomerCreationModal && (
+        <div className="fixed inset-0 z-[110]">
+          <CustomerCreationModal
+            isOpen={showCustomerCreationModal}
+            onClose={handleCloseCustomerCreationModal}
+            onCustomerCreated={handleCustomerCreated}
+            leadData={request}
+          />
+        </div>
+      )}
     </>
   );
 };

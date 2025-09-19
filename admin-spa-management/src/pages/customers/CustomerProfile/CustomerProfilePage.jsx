@@ -14,6 +14,7 @@ import PhotosPanel from "./panels/PhotosPanel";
 
 import CustomerCaseCreationModal from "@/components/Customer/CustomerCaseCreationModal";
 import InvoiceCreationModal from "@/components/Billing/InvoiceCreationModal";
+import UploadPhotosModal from "./modals/UploadPhotosModal";
 
 export default function CustomerProfilePage({ userRole, customerId: customerIdProp }) {
   const {
@@ -39,6 +40,13 @@ export default function CustomerProfilePage({ userRole, customerId: customerIdPr
   // ✅ Thêm state để quản lý panel ảnh
   const [showPhotosPanel, setShowPhotosPanel] = useState(false);
   const [selectedCaseForPhotos, setSelectedCaseForPhotos] = useState(null);
+
+  // ✅ State quản lý upload modal
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadFiles, setUploadFiles] = useState([]);
+  const [uploadNote, setUploadNote] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
 
   const normalizedTreatments = useMemo(
     () =>

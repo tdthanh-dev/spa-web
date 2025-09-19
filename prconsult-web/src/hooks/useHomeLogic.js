@@ -18,7 +18,7 @@ export const useHomeLogic = () => {
       ...prev,
       [name]: value
     }))
-    // Clear error when user starts typing
+    // Clear error khi user bắt đầu nhập lại
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -32,44 +32,51 @@ export const useHomeLogic = () => {
     if (!formData.fullName.trim()) {
       newErrors.fullName = 'Vui lòng nhập họ và tên'
     }
-    
+
     const phoneValidation = validateVietnamesePhone(formData.phone)
     if (!phoneValidation.isValid) {
       newErrors.phone = phoneValidation.error
     }
-    
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log('Form submitted with data:', formData)
 
-    if (!validateForm()) {
-      console.log('Form validation failed')
-      return
-    }
+    if (!validateForm()) return
 
     setIsSubmitting(true)
     setSubmitMessage('')
 
     try {
-      console.log('Submitting lead to API...')
       const result = await leadsApi.submitLead(formData)
-      console.log('API response:', result)
+      // Thành công
       setSubmitMessage('✅ Yêu cầu tư vấn thành công! Chúng tôi sẽ liên hệ sớm nhất.')
       setFormData({ fullName: '', phone: '', note: '' })
       setErrors({})
+      return result
     } catch (error) {
       console.error('Error submitting form:', error)
-      setSubmitMessage('❌ Có lỗi xảy ra. Vui lòng thử lại sau.')
+
+      // Lấy thông báo lỗi từ server nếu có
+      const serverMessage =
+        error?.response?.data?.error || // trường "error" trong ví dụ bạn gửi
+        error?.response?.data?.message || // fallback nếu server dùng "message"
+        error?.message // cuối cùng dùng message từ axios error
+
+      if (serverMessage) {
+        setSubmitMessage(`❌ ${serverMessage}`)
+      } else {
+        setSubmitMessage('❌ Có lỗi xảy ra. Vui lòng thử lại sau.')
+      }
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  // Check if form is valid for button styling (enable button if at least one field is filled)
+  // Dùng để styling nút (enable nếu có nhập tên hoặc số điện thoại)
   const isFormValid = formData.fullName.trim() || formData.phone.trim()
 
   return {

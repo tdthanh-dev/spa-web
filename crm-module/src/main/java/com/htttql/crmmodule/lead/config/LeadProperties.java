@@ -8,7 +8,7 @@ import org.springframework.validation.annotation.Validated;
 
 /**
  * Configuration properties for Lead module
- * Replaces magic numbers and hard-coded values
+ * Rate limiting đã được chuyển sang RateLimitProperties
  */
 @Data
 @Component
@@ -16,69 +16,56 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class LeadProperties {
 
-    private RateLimit rateLimit = new RateLimit();
     private Cache cache = new Cache();
     private AntiSpam antiSpam = new AntiSpam();
     private Stats stats = new Stats();
 
     @Data
-    public static class RateLimit {
-        @Min(1) @Max(10000)
-        private int maxPerHour = 1000;
-
-        @Min(10) @Max(100000)
-        private int maxPerDay = 10000;
-
-        @Min(1) @Max(24)
-        private int windowHours = 1;
-
-        @Min(1) @Max(720) // Max 30 days
-        private int windowDays = 24;
-    }
-
-    @Data
     public static class Cache {
         @Min(1) @Max(8760) // Max 1 year
-        private int ttlHours = 24;
+        private int ttlHours;
 
         @Min(1) @Max(8760)
-        private int tempStorageTtlHours = 48;
+        private int tempStorageTtlHours;
 
         @NotBlank
-        private String prefix = "LEAD:";
+        private String prefix;
 
         @NotBlank
-        private String allPrefix = "ALL:";
+        private String allPrefix;
 
         @NotBlank
-        private String statusPrefix = "STATUS:";
+        private String statusPrefix;
 
         @NotBlank
-        private String rateLimitPrefix = "RATE_LIMIT:";
+        private String tempPrefix;
 
         @NotBlank
-        private String tempPrefix = "TEMP:";
-
-        @NotBlank
-        private String statsPrefix = "STATS:";
+        private String statsPrefix;
     }
 
     @Data
     public static class AntiSpam {
-        private boolean enabled = true;
+        private boolean enabled;
 
-        @Min(1) @Max(720) // Max 30 days
-        private int uniqueConstraintHours = 24;
+        @Min(1) @Max(2592000) // Max 30 days in seconds
+        private int uniqueConstraintSeconds;
 
-        @Min(1) @Max(720)
-        private int ipBlockHours = 24;
+        @Min(1) @Max(2592000) // Max 30 days in seconds
+        private int ipBlockSeconds;
+        
+        @Min(1) @Max(1000) // Max 1000 requests per day
+        private int maxRequestsPerDay;
+        
+        @Min(1) @Max(100) // Max submissions per phone per day
+        private int maxSubmissionsPerPhone;
     }
 
     @Data
     public static class Stats {
         @Min(1) @Max(24)
-        private int refreshIntervalHours = 1;
+        private int refreshIntervalHours;
 
-        private boolean autoUpdate = true;
+        private boolean autoUpdate;
     }
 }

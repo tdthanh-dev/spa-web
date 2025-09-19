@@ -33,7 +33,7 @@ const Layout = ({ children }) => {
       <header className={`header ${isSticky ? 'sticky' : ''}`}>
         <nav className="nav">
           <a href="#home" className="logo">
-            <span className="logo-text">Spa Dr Oha</span>
+            <span className="logo-text">Spa KimKang</span>
           </a>
           
           <button 

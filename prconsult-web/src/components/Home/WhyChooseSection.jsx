@@ -4,7 +4,7 @@ const WhyChooseSection = ({ reasons }) => {
   return (
     <section className="why-choose-section">
       <div className="container">
-        <h2 className="section-title" data-aos="fade-up">Lý do khách hàng chọn Spa Dr Oha</h2>
+        <h2 className="section-title" data-aos="fade-up">Lý do khách hàng chọn Spa KimKang</h2>
 
         <div className="reasons-grid">
           {reasons.map((reason, index) => (

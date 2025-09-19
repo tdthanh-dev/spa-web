@@ -53,10 +53,10 @@ const Home = () => {
   return (
     <>
       <Helmet>
-        <title>Spa Dr Oha - Xăm chân mày, xăm môi đẹp tự nhiên | Đẹp tự nhiên - Chuẩn phong thủy</title>
-        <meta name="description" content="Spa Dr Oha chuyên xăm chân mày tự nhiên, xăm môi hồng tươi với công nghệ Hairstroke siêu mảnh. Đội ngũ chuyên gia 10+ năm kinh nghiệm, công nghệ an toàn, bảo hành màu trọn đời." />
-        <meta name="keywords" content="xăm chân mày, xăm môi tự nhiên, Spa Dr Oha, xăm chân mày phong thủy, xăm môi collagen, xăm môi lip blushing" />
-        <meta property="og:title" content="Spa Dr Oha - Xăm chân mày, xăm môi đẹp tự nhiên" />
+        <title>Spa KimKang - Xăm chân mày, xăm môi đẹp tự nhiên | Đẹp tự nhiên - Chuẩn phong thủy</title>
+        <meta name="description" content="Spa KimKang chuyên xăm chân mày tự nhiên, xăm môi hồng tươi với công nghệ Hairstroke siêu mảnh. Đội ngũ chuyên gia 10+ năm kinh nghiệm, công nghệ an toàn, bảo hành màu trọn đời." />
+        <meta name="keywords" content="xăm chân mày, xăm môi tự nhiên, Spa KimKang, xăm chân mày phong thủy, xăm môi collagen, xăm môi lip blushing" />
+        <meta property="og:title" content="Spa KimKang - Xăm chân mày, xăm môi đẹp tự nhiên" />
         <meta property="og:description" content="Chuyên xăm chân mày tự nhiên, xăm môi hồng tươi với công nghệ hiện đại" />
         <meta property="og:type" content="website" />
       </Helmet>
@@ -79,14 +79,14 @@ const Home = () => {
         {/* Gallery Section */}
         <section className="gallery-section" id="gallery">
           <div className="container">
-            <h2 className="section-title">Kết quả trước & sau tại Spa Dr Oha</h2>
+            <h2 className="section-title">Kết quả trước & sau tại Spa KimKang</h2>
 
             <div className="gallery-grid">
               {[1, 2, 3, 4, 5, 6].map((num) => (
                 <div key={num} className="gallery-item">
                   <img
                     src={`/images/p${num}.jpg`}
-                    alt={`Kết quả xăm chân mày tự nhiên Dr Oha ${num}`}
+                    alt={`Kết quả xăm chân mày tự nhiên KimKang ${num}`}
                     loading="lazy"
                   />
                 </div>

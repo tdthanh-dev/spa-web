@@ -6,14 +6,14 @@ const AboutSection = () => {
       <div className="container">
         <div className="about-content">
           <div className="about-image" data-aos="slide-in-left">
-            <img src="/images/p7.jpg" alt="Không gian Spa Dr Oha sang trọng" className="about-img" />
+            <img src="/images/p7.jpg" alt="Không gian Spa KimKang sang trọng" className="about-img" />
           </div>
 
           <div className="about-text" data-aos="slide-in-right">
-            <h2>Spa Dr Oha – Điểm đến của sự tự tin</h2>
+            <h2>Spa KimKang – Điểm đến của sự tự tin</h2>
             <p className="about-description">
               Với hơn 10 năm kinh nghiệm trong lĩnh vực xăm phun thẩm mỹ,
-              <strong>Spa Dr Oha</strong> tự hào là địa chỉ uy tín hàng đầu về
+              <strong>Spa KimKang</strong> tự hào là địa chỉ uy tín hàng đầu về
               <strong>xăm chân mày tự nhiên</strong> và <strong>xăm môi hồng tươi</strong>.
             </p>
             <p>

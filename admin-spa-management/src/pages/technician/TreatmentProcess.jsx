@@ -43,11 +43,17 @@ const TreatmentProcess = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">🩺 Quá trình điều trị</h1>
-        <p className="text-gray-600">Quản lý các buổi điều trị và ghi chú kỹ thuật</p>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-6">
+      {/* Enhanced Header */}
+      <div className="mb-8 text-center">
+        <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full text-white text-3xl mb-4 shadow-lg">
+          🩺
+        </div>
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-3">
+          Quá trình điều trị
+        </h1>
+        <p className="text-gray-600 text-lg">Quản lý các buổi điều trị và ghi chú kỹ thuật một cách chuyên nghiệp</p>
+        <div className="w-24 h-1 bg-gradient-to-r from-purple-600 to-blue-600 mx-auto mt-4 rounded-full"></div>
       </div>
 
       {/* Current Treatment */}

@@ -4,7 +4,7 @@ const TestimonialsSection = ({ testimonials }) => {
   return (
     <section className="testimonials-section" id="testimonials">
       <div className="container">
-        <h2 className="section-title">Khách hàng nói gì về Spa Dr Oha</h2>
+        <h2 className="section-title">Khách hàng nói gì về Spa KimKang</h2>
         <p className="section-subtitle">
           Hơn 10,000+ khách hàng tin tưởng và hài lòng với dịch vụ của chúng tôi
         </p>

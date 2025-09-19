@@ -2,11 +2,11 @@
 export const faqData = [
   {
     question: "Xăm chân mày có đau không?",
-    answer: "Tại Spa Dr Oha, chúng tôi sử dụng công nghệ xăm không đau với thuốc tê an toàn. Khách hàng chỉ cảm thấy hơi tê nhẹ, hoàn toàn không đau đớn. Công nghệ hiện đại chỉ tác động lên lớp thượng bì nên cảm giác rất nhẹ, đa phần khách hàng mô tả là thoải mái."
+    answer: "Tại Spa KimKang, chúng tôi sử dụng công nghệ xăm không đau với thuốc tê an toàn. Khách hàng chỉ cảm thấy hơi tê nhẹ, hoàn toàn không đau đớn. Công nghệ hiện đại chỉ tác động lên lớp thượng bì nên cảm giác rất nhẹ, đa phần khách hàng mô tả là thoải mái."
   },
   {
     question: "Xăm môi giữ màu được bao lâu?",
-    answer: "Với công nghệ xăm môi hiện đại, màu sắc sẽ giữ được từ 3-5 năm. Spa Dr Oha cam kết bảo hành màu và hỗ trợ tái tạo khi cần thiết. Thực tế, mực hữu cơ bền 2-3 năm, mực vô cơ có thể giữ màu đến 5-7 năm nếu chăm sóc đúng cách."
+    answer: "Với công nghệ xăm môi hiện đại, màu sắc sẽ giữ được từ 3-5 năm. Spa KimKang cam kết bảo hành màu và hỗ trợ tái tạo khi cần thiết. Thực tế, mực hữu cơ bền 2-3 năm, mực vô cơ có thể giữ màu đến 5-7 năm nếu chăm sóc đúng cách."
   },
   {
     question: "Sau bao lâu có thể trang điểm?",
@@ -18,11 +18,11 @@ export const faqData = [
   },
   {
     question: "Xăm chân mày có tự nhiên không?",
-    answer: "Công nghệ Hairstroke tại Spa Dr Oha tạo ra từng sợi lông mày siêu mảnh, tự nhiên như lông mày thật. Kỹ thuật phun/xăm hiện đại cũng giúp dáng mày mềm mại, hài hòa khuôn mặt."
+    answer: "Công nghệ Hairstroke tại Spa KimKang tạo ra từng sợi lông mày siêu mảnh, tự nhiên như lông mày thật. Kỹ thuật phun/xăm hiện đại cũng giúp dáng mày mềm mại, hài hòa khuôn mặt."
   },
   {
     question: "Chi phí xăm chân mày và xăm môi là bao nhiêu?",
-    answer: "Giá dịch vụ tại Spa Dr Oha dao động từ 2.500.000đ - 4.500.000đ tùy theo kỹ thuật và gói dịch vụ. Ngoài ra, còn có nhiều gói ưu đãi và combo tiết kiệm cho khách hàng."
+    answer: "Giá dịch vụ tại Spa KimKang dao động từ 2.500.000đ - 4.500.000đ tùy theo kỹ thuật và gói dịch vụ. Ngoài ra, còn có nhiều gói ưu đãi và combo tiết kiệm cho khách hàng."
   },
   {
     question: "Có cần tư vấn trước khi xăm không?",
@@ -30,15 +30,15 @@ export const faqData = [
   },
   {
     question: "Xăm môi có ảnh hưởng đến sức khỏe không?",
-    answer: "Spa Dr Oha sử dụng mực xăm chuyên dụng, an toàn cho sức khỏe, đã được kiểm định. Quy trình vô trùng nghiêm ngặt đảm bảo an toàn tuyệt đối cho khách hàng, không gây kích ứng hay biến chứng."
+    answer: "Spa KimKang sử dụng mực xăm chuyên dụng, an toàn cho sức khỏe, đã được kiểm định. Quy trình vô trùng nghiêm ngặt đảm bảo an toàn tuyệt đối cho khách hàng, không gây kích ứng hay biến chứng."
   },
   {
     question: "Sau khi xăm có cần chăm sóc đặc biệt không?",
-    answer: "Có, bạn cần bôi kem dưỡng theo hướng dẫn, tránh ánh nắng trực tiếp, không gãi hay cọ xát vùng xăm. Spa Dr Oha sẽ hướng dẫn chi tiết cách chăm sóc sau xăm. Thông thường, nên để vảy bong tự nhiên và giữ da luôn sạch sẽ, khô thoáng."
+    answer: "Có, bạn cần bôi kem dưỡng theo hướng dẫn, tránh ánh nắng trực tiếp, không gãi hay cọ xát vùng xăm. Spa KimKang sẽ hướng dẫn chi tiết cách chăm sóc sau xăm. Thông thường, nên để vảy bong tự nhiên và giữ da luôn sạch sẽ, khô thoáng."
   },
   {
     question: "Có thể xóa xăm nếu không hài lòng không?",
-    answer: "Trong trường hợp hiếm hoi không hài lòng, Spa Dr Oha hỗ trợ điều chỉnh hoặc tái tạo miễn phí. Ngoài ra, công nghệ xóa xăm bằng laser hiện đại cũng có thể loại bỏ hoặc chỉnh sửa màu mực an toàn."
+    answer: "Trong trường hợp hiếm hoi không hài lòng, Spa KimKang hỗ trợ điều chỉnh hoặc tái tạo miễn phí. Ngoài ra, công nghệ xóa xăm bằng laser hiện đại cũng có thể loại bỏ hoặc chỉnh sửa màu mực an toàn."
   }
   
 ]
@@ -47,7 +47,7 @@ export const testimonials = [
   {
     name: "Nguyễn Minh Anh",
     service: "Xăm chân mày Hairstroke",
-    review: "Chân mày xăm ở Spa Dr Oha rất tự nhiên, không ai biết tôi có xăm. Thật sự hài lòng với kết quả!",
+    review: "Chân mày xăm ở Spa KimKang rất tự nhiên, không ai biết tôi có xăm. Thật sự hài lòng với kết quả!",
     before: "/images/p1.jpg",
     after: "/images/p2.jpg"
   },
@@ -62,14 +62,14 @@ export const testimonials = [
   {
     name: "Lê Thị Mai",
     service: "Combo mày + môi",
-    review: "Dịch vụ chuyên nghiệp, không gian sạch sẽ. Tôi sẽ giới thiệu bạn bè đến Spa Dr Oha để làm đẹp.",
+    review: "Dịch vụ chuyên nghiệp, không gian sạch sẽ. Tôi sẽ giới thiệu bạn bè đến Spa KimKang để làm đẹp.",
     before: "/images/p5.jpg",
     after: "/images/p6.jpg"
   },
   {
     name: "Phạm Thị Lan",
     service: "Xăm môi lip blushing",
-    review: "Kỹ thuật lip blushing ở Dr Oha tuyệt vời! Môi tôi giờ có màu hồng tự nhiên rất đẹp, bền màu lâu.",
+    review: "Kỹ thuật lip blushing ở KimKang tuyệt vời! Môi tôi giờ có màu hồng tự nhiên rất đẹp, bền màu lâu.",
     before: "/images/p7.jpg",
     after: "/images/p8.jpg"
   }

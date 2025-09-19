@@ -2,7 +2,7 @@ package com.htttql.crmmodule.lead.service.impl;
 
 import com.htttql.crmmodule.common.exception.BadRequestException;
 import com.htttql.crmmodule.common.service.CacheService;
-import com.htttql.crmmodule.lead.config.LeadProperties;
+import com.htttql.crmmodule.common.config.RateLimitProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +16,7 @@ import java.time.Duration;
 public class LeadRateLimitService {
 
     private final CacheService cacheService;
-    private final LeadProperties properties;
+    private final RateLimitProperties rateLimitProperties;
 
     public void checkLimit(String ipAddress) {
         if (ipAddress == null || "unknown".equals(ipAddress)) {
@@ -25,14 +25,14 @@ public class LeadRateLimitService {
 
         if (!checkHourlyLimit(ipAddress)) {
             throw new BadRequestException(
-                String.format("Hourly rate limit exceeded for IP: %s. Maximum %d leads per hour.",
-                    ipAddress, properties.getRateLimit().getMaxPerHour()));
+                String.format("Bạn đã gửi quá nhiều yêu cầu trong giờ qua. Giới hạn tối đa %d yêu cầu mỗi giờ. Vui lòng thử lại sau.",
+                    rateLimitProperties.getLead().getMaxPerHour()));
         }
 
         if (!checkDailyLimit(ipAddress)) {
             throw new BadRequestException(
-                String.format("Daily rate limit exceeded for IP: %s. Maximum %d leads per day.",
-                    ipAddress, properties.getRateLimit().getMaxPerDay()));
+                String.format("Bạn đã gửi quá nhiều yêu cầu hôm nay. Giới hạn tối đa %d yêu cầu mỗi ngày. Vui lòng thử lại vào ngày mai.",
+                    rateLimitProperties.getLead().getMaxPerDay()));
         }
     }
 
@@ -45,10 +45,10 @@ public class LeadRateLimitService {
         }
 
         if (currentCount == 1) {
-            cacheService.expire(hourlyKey, Duration.ofHours(properties.getRateLimit().getWindowHours()));
+            cacheService.expire(hourlyKey, Duration.ofHours(rateLimitProperties.getLead().getWindowHours()));
         }
 
-        return currentCount <= properties.getRateLimit().getMaxPerHour();
+        return currentCount <= rateLimitProperties.getLead().getMaxPerHour();
     }
 
     private boolean checkDailyLimit(String ipAddress) {
@@ -60,18 +60,18 @@ public class LeadRateLimitService {
         }
 
         if (currentCount == 1) {
-            cacheService.expire(dailyKey, Duration.ofHours(properties.getRateLimit().getWindowDays()));
+            cacheService.expire(dailyKey, Duration.ofHours(rateLimitProperties.getLead().getWindowDays()));
         }
 
-        return currentCount <= properties.getRateLimit().getMaxPerDay();
+        return currentCount <= rateLimitProperties.getLead().getMaxPerDay();
     }
 
     private String buildHourlyKey(String ipAddress) {
-        return properties.getCache().getRateLimitPrefix() + "HOURLY:" + ipAddress;
+        return rateLimitProperties.buildLeadHourlyKey(ipAddress);
     }
 
     private String buildDailyKey(String ipAddress) {
-        return properties.getCache().getRateLimitPrefix() + "DAILY:" + ipAddress;
+        return rateLimitProperties.buildLeadDailyKey(ipAddress);
     }
 
     public RateLimitStatus getStatus(String ipAddress) {
@@ -85,8 +85,8 @@ public class LeadRateLimitService {
                 .ipAddress(ipAddress)
                 .hourlyCount(hourlyCount != null ? Integer.parseInt(hourlyCount) : 0)
                 .dailyCount(dailyCount != null ? Integer.parseInt(dailyCount) : 0)
-                .hourlyLimit(properties.getRateLimit().getMaxPerHour())
-                .dailyLimit(properties.getRateLimit().getMaxPerDay())
+                .hourlyLimit(rateLimitProperties.getLead().getMaxPerHour())
+                .dailyLimit(rateLimitProperties.getLead().getMaxPerDay())
                 .build();
     }
 

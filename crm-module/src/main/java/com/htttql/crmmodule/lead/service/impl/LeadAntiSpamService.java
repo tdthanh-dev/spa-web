@@ -64,17 +64,29 @@ public class LeadAntiSpamService {
         String phoneKey = buildPhoneTempKey(phone);
         String ipKey = buildIpTempKey(ipAddress);
 
+        // Check if phone/IP is in cooldown period
         if (cacheService.get(phoneKey) != null) {
-            throw new BadRequestException("Duplicate submission detected for this phone number. Please try again later.");
+            throw new BadRequestException("Bạn vừa gửi yêu cầu với số điện thoại này. Vui lòng chờ ít nhất 10 giây trước khi gửi lại.");
         }
 
         if (cacheService.get(ipKey) != null) {
-            throw new BadRequestException("Too many submissions from your IP address. Please try again later.");
+            throw new BadRequestException("Bạn vừa gửi yêu cầu từ địa chỉ IP này. Vui lòng chờ ít nhất 10 giây trước khi gửi tiếp.");
         }
 
-        Duration ttl = Duration.ofHours(properties.getCache().getTempStorageTtlHours());
+        // Check daily IP request limit
+        checkDailyIPLimit(ipAddress);
+        
+        // Check daily phone submission limit
+        checkDailyPhoneLimit(phone);
+
+        // Reserve temp data with cooldown
+        Duration ttl = Duration.ofSeconds(properties.getAntiSpam().getIpBlockSeconds());
         cacheService.put(phoneKey, phone, ttl);
         cacheService.put(ipKey, ipAddress, ttl);
+
+        // Increment daily counter
+        incrementDailyIPCounter(ipAddress);
+        incrementDailyPhoneCounter(phone);
     }
 
     private boolean checkDuplicateSubmission(String phone, String ipAddress) {
@@ -82,6 +94,54 @@ public class LeadAntiSpamService {
         String ipKey = buildIpTempKey(ipAddress);
 
         return cacheService.get(phoneKey) != null || cacheService.get(ipKey) != null;
+    }
+
+    private void checkDailyIPLimit(String ipAddress) {
+        String countKey = buildIpCountKey(ipAddress);
+        String countStr = (String) cacheService.get(countKey);
+        int currentCount = countStr != null ? Integer.parseInt(countStr) : 0;
+
+        if (currentCount >= properties.getAntiSpam().getMaxRequestsPerDay()) {
+            throw new BadRequestException(
+                String.format("Bạn đã gửi quá nhiều yêu cầu hôm nay (%d/%d). Vui lòng thử lại vào ngày mai.", 
+                    currentCount, properties.getAntiSpam().getMaxRequestsPerDay())
+            );
+        }
+    }
+
+    private void checkDailyPhoneLimit(String phone) {
+        String countKey = buildPhoneCountKey(phone);
+        String countStr = (String) cacheService.get(countKey);
+        int currentCount = countStr != null ? Integer.parseInt(countStr) : 0;
+
+        if (currentCount >= properties.getAntiSpam().getMaxSubmissionsPerPhone()) {
+            throw new BadRequestException(
+                String.format("Đã gửi yêu cầu với số điện thoại này hôm nay. Mỗi số điện thoại chỉ được gửi %d yêu cầu mỗi ngày. Vui lòng thử lại vào ngày mai.", 
+                    properties.getAntiSpam().getMaxSubmissionsPerPhone())
+            );
+        }
+    }
+
+    private void incrementDailyIPCounter(String ipAddress) {
+        String countKey = buildIpCountKey(ipAddress);
+        String countStr = (String) cacheService.get(countKey);
+        int currentCount = countStr != null ? Integer.parseInt(countStr) : 0;
+        int newCount = currentCount + 1;
+
+        // Set TTL to 24 hours for daily counter
+        Duration dailyTtl = Duration.ofHours(24);
+        cacheService.put(countKey, String.valueOf(newCount), dailyTtl);
+    }
+
+    private void incrementDailyPhoneCounter(String phone) {
+        String countKey = buildPhoneCountKey(phone);
+        String countStr = (String) cacheService.get(countKey);
+        int currentCount = countStr != null ? Integer.parseInt(countStr) : 0;
+        int newCount = currentCount + 1;
+
+        // Set TTL to 24 hours for daily counter
+        Duration dailyTtl = Duration.ofHours(24);
+        cacheService.put(countKey, String.valueOf(newCount), dailyTtl);
     }
 
     private String buildPhoneTempKey(String phone) {
@@ -92,11 +152,12 @@ public class LeadAntiSpamService {
         return properties.getCache().getTempPrefix() + "IP:" + ipAddress;
     }
 
-    private String maskPhone(String phone) {
-        if (phone == null || phone.length() < 4) {
-            return phone;
-        }
-        return phone.substring(0, 3) + "***" + phone.substring(phone.length() - 3);
+    private String buildIpCountKey(String ipAddress) {
+        return properties.getCache().getTempPrefix() + "COUNT:" + ipAddress;
+    }
+
+    private String buildPhoneCountKey(String phone) {
+        return properties.getCache().getTempPrefix() + "PHONE_COUNT:" + phone;
     }
 
     public void clearTempData(String phone) {

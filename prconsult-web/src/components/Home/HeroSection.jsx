@@ -6,7 +6,7 @@ const HeroSection = () => {
   }
 
   return (
-    <section className="hero" id="home" aria-label="Trang chủ - Giới thiệu dịch vụ xăm thẩm mỹ Dr Oha">
+    <section className="hero" id="home" aria-label="Trang chủ - Giới thiệu dịch vụ xăm thẩm mỹ KimKang">
       <video 
         className="hero-video" 
         autoPlay 
@@ -26,7 +26,7 @@ const HeroSection = () => {
         <p className="hero-slogan" role="banner">Đẹp tự nhiên – Chuẩn phong thủy</p>
 
         <div className="hero-main">
-          <h1 className="hero-title">Xăm chân mày – Xăm môi <span className="dr-oha">Dr Oha</span></h1>
+          <h1 className="hero-title">Xăm chân mày – Xăm môi <span className="dr-oha">KimKang</span></h1>
           <p className="hero-subtitle">
             <strong>Chuyên gia hàng đầu</strong> về xăm chân mày tự nhiên và xăm môi hồng tươi với công nghệ Hairstroke siêu mảnh, 
             mang đến vẻ đẹp tự nhiên hoàn hảo cho mọi khách hàng
